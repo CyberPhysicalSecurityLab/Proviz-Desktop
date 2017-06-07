@@ -1,0 +1,31 @@
+{
+  "compilers": [
+    {"type": "Arduino", "enviroments": [
+      {
+        "type":"OSX",A
+        "DefaultPath":"/Applications/Arduino.app/Contents/MacOS/Arduino"
+      },
+      {
+        "type":"Windows",
+        "DefaultPath":"C:\\Program Files (x86)\\Arduino\\arduino_debug.exe"
+      },
+      { "type":"Linux"
+
+      }
+    ] }
+
+  ],
+
+  "deviceTypes":[
+    "Arduino",
+   "Raspberry Pi",
+    "BeagleBone"
+  ]
+
+
+
+
+}
+
+
+

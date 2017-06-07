@@ -1,0 +1,71 @@
+import org.json.simple.JSONObject;
+
+import com.pi4j.io.gpio.GpioController;
+import com.pi4j.io.gpio.GpioFactory;
+import com.pi4j.io.gpio.RaspiPin;
+import com.pi4j.io.i2c.I2CBus;
+import com.pi4j.wiringpi.GpioUtil;
+
+import java.text.DecimalFormat;
+
+import static java.lang.Thread.sleep;
+import static utils.I2CCombined.IsI2cCombined;
+import static utils.I2CCombined.SetI2cCombined;
+import static utils.I2CCombined.SetI2cCombined;
+
+<#list board.sensors as sensor>
+<#list sensor.libraries as library>
+<#if library.environment == "RASPBERRY_PI">
+<#list library.names as name>
+import ${name};
+</#list>
+</#if>
+</#list>
+</#list>
+
+/**
+ * Created by Proviz Software on ${date}
+ */
+
+
+
+public class MainTester {
+
+    private static String username = System.getProperty("user.name");
+    private static final String DEVICE_ID = "${board.uniqueId}";
+    private static final String DEVICE_NAME = "${board.name}";
+    private static Object lock = new Object();
+
+
+<#list board.sensors as sensor>
+<#list sensor.codes as code>
+<#list code.functions as function>
+<#if function.name == "self">
+       static void func_${sensor.uniqueIdWithUnderScore}(){ ${function.innerCode}}
+          </#if>
+</#list>
+</#list>
+</#list>
+
+static void writeToPipe(String message)
+{
+ synchronized (lock)
+  {
+  System.out.println(message);
+  }
+}
+
+    public static void main (String[] args) throws InterruptedException {
+       GpioUtil.enableNonPrivilegedAccess();
+        <#list board.sensors as sensor>
+        <#list sensor.codes as code>
+        <#list code.functions as function>
+        <#if function.name == "self">
+                func_${sensor.uniqueIdWithUnderScore}();
+                  </#if>
+        </#list>
+        </#list>
+        </#list>
+
+    }
+}

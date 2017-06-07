@@ -1,0 +1,19 @@
+{
+  "name": "Pi 3 Model B",
+  "make": "Raspberry Pi",
+  "analogInput": 0,
+  "analogStartingPinNumber":0,
+  "digitalInput": 26,
+  "i2cPinNumber": 1,
+  "spiBusNumber": 1,
+  "digitalStartingPinNumber": 0,
+  "i2cStartingPinNumber": 0,
+  "spiBusStartingPinNumber": 0,
+  "serialPortPairs": 0,
+  "serialStartingPinNumber":0,
+  "has5v": true,
+  "has3_3v": true,
+  "device_type": "RASPBERRY_PI",
+  "compilerArgument": ""
+
+}

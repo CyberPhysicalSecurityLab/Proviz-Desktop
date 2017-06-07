@@ -1,0 +1,86 @@
+{
+  "pins" : [
+    {"name":"I2C Communication",
+      "isrequired": true,
+      "dataDirection": "OUTPUT",
+      "type": "i2c",
+      "isAvailable": true,
+      "order":-1
+    }
+
+  ],
+  "baudrate": 115200,
+  "name":"Adafruit BME280 Sensor" ,
+  "description":"Adafruit BME280 I2C or SPI Temperature Humidity Pressure Sensor",
+  "variableTypeName": "Adafruit_BME280",
+  "codes" : [
+    {
+      "environment": "ARDUINO",
+      "functions": [
+        {
+          "type": "void",
+          "name": "loop",
+          "arguments": [],
+          "innerCode": "sensor_${sensor.uniqueIdWithUnderScore}.begin();double SEALEVELPRESSURE_HPA = 1013.25; String sensorId = \"${sensor.uniqueIdWithUnderScore}\";String sensorName = \"${sensor.name}\";JsonObject& obj1 = jsonBuffer.createObject();JsonObject& obj2 = jsonBuffer.createObject();JsonObject& obj3 = jsonBuffer.createObject();JsonObject& obj4 = jsonBuffer.createObject();obj1[\"sensorName\"] = sensorName; obj1[\"sensorId\"] = sensorId; obj1[\"sensorUnit\"] = \"C\"; obj1[\"sensorValue\"] = sensor_${sensor.uniqueIdWithUnderScore}.readTemperature(); obj1[\"variableName\"] = \"Temperature\";obj2[\"sensorName\"] = sensorName; obj2[\"sensorId\"] = sensorId;obj2[\"sensorUnit\"] = \"%\";obj2[\"sensorValue\"] = sensor_${sensor.uniqueIdWithUnderScore}.readPressure(); obj2[\"variableName\"] = \"Pressure\";obj3[\"sensorName\"] = sensorName; obj3[\"sensorId\"] = sensorId;obj3[\"sensorUnit\"] = \"mb\";obj3[\"sensorValue\"] = sensor_${sensor.uniqueIdWithUnderScore}.readAltitude(SEALEVELPRESSURE_HPA); obj3[\"variableName\"] = \"Altitude\";obj4[\"sensorName\"] = sensorName; obj4[\"sensorId\"] = sensorId;obj4[\"sensorUnit\"] = \"m\";obj4[\"sensorValue\"] = sensor_${sensor.uniqueIdWithUnderScore}.readHumidity(); obj4[\"variableName\"] = \"Humidity\";obj.add(obj1);obj.add(obj2);obj.add(obj3);obj.add(obj4);"
+        },
+        {
+          "type": "void",
+          "name": "setup",
+          "arguments": [],
+          "innerCode": ""
+        }
+      ]
+    },
+    {"environment": "RASPBERRY_PI",
+      "functions": [
+        {"type": "void",
+        "name": "self",
+        "arguments": [],
+        "innerCode": "final BME280 bm = new BME280(I2CBus.BUS_1, 0x77,\"${sensor.uniqueIdWithUnderScore}\"); try{ while(true){  new Thread(new Runnable() {@Override public void run() { try{JSONObject message = new JSONObject(); message.put(\"sensors\", bm.jsonMessage());writeToPipe(message.toString());}catch(Exception ex){ex.printStackTrace();}}}).run();}}catch(Exception e){e.printStackTrace();}"}
+      ]
+
+    }
+  ],
+  "variables" : [
+    {"type":"Adafruit_BME280",
+      "preferredName": "bme",
+      "communicationVariable": false},
+    {"type": "long",
+      "preferredName": "cm",
+      "communicationVariable": false},
+    {"type": "long",
+      "preferredName": "volt",
+      "communicationVariable": false},
+    {"type":"double",
+      "preferredName": "Temperature",
+      "communicationVariable": true},
+    {"type": "double",
+      "preferredName": "Pressure",
+      "communicationVariable": true},
+    {"type": "double",
+      "preferredName": "Humidity",
+      "communicationVariable": true},
+    {"type": "double",
+      "preferredName": "Altitude",
+      "communicationVariable": true}
+
+  ],
+  "libraries":[
+    {
+      "environment": "ARDUINO",
+      "names": [
+        "Wire.h",
+        "SPI.h",
+        "Adafruit_Sensor.h",
+        "Adafruit_BME280.h"
+      ]
+    },
+    {
+      "environment": "RASPBERRY_PI",
+      "names": [
+        "bme280.BME280"]
+    }
+  ]
+
+
+}

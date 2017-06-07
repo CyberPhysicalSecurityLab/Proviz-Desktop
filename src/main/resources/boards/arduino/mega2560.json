@@ -1,0 +1,19 @@
+{
+  "name": "Mega2560",
+  "make": "Arduino",
+  "analogInput": 16,
+  "analogStartingPinNumber":0,
+  "digitalInput": 28,
+  "i2cPinNumber": 2,
+  "spiBusNumber": 1,
+  "digitalStartingPinNumber": 22,
+  "i2cStartingPinNumber": 0,
+  "spiBusStartingPinNumber": 0,
+  "serialPortPairs": 4,
+  "serialStartingPinNumber":0,
+  "has5v": true,
+  "has3_3v": true,
+  "device_type": "ARDUINO",
+  "compilerArgument": "arduino:avr:mega:cpu=atmega2560"
+
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Uno",
+  "make": "Arduino",
+  "analogInput": 6,
+  "digitalInput": 12,
+  "serialPortPairs": 1,
+  "has5v": true,
+  "has3_3v": true
+}
