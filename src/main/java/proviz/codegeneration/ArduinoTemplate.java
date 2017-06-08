@@ -1,12 +1,10 @@
 package proviz.codegeneration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import proviz.BoardView;
-import proviz.LiveDataTable;
 import proviz.LiveDataTableModel;
 import proviz.models.devices.Board;
 import proviz.models.devices.Sensor;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import proviz.ProjectConstants;
 
 import java.io.IOException;
 import java.net.URISyntaxException;

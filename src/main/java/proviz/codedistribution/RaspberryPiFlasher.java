@@ -1,19 +1,13 @@
 package proviz.codedistribution;
 
-import com.apple.eio.FileManager;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
-import proviz.ProjectConstants;
+
 import proviz.codegeneration.RaspberryPiTemplate;
 import proviz.connection.firwaredistribution.linux.ProvizProperties;
 import proviz.connection.firwaredistribution.linux.ssh.SshHandler;
-import proviz.library.utilities.FileOperations;
 
 import java.io.*;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.Map;
 
 /**
  * Created by Burak on 2/3/17.
