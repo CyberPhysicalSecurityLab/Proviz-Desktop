@@ -67,6 +67,11 @@ gradle-app.setting
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
 
+# external libraries
+!bluecove-2.1.2-javadoc.jar
+!bluecove-2.1.2-sources.jar
+!bluecove-2.1.2.jar
+
 # Cache of project
 .gradletasknamecache
 
