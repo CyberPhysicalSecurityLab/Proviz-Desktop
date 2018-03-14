@@ -1,6 +1,5 @@
 package proviz;
 
-import com.sun.javafx.scene.control.skin.LabeledText;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -23,8 +22,8 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
-import org.fxmisc.richtext.StyleSpans;
-import org.fxmisc.richtext.StyleSpansBuilder;
+//import org.fxmisc.richtext.StyleSpans;
+//import org.fxmisc.richtext.StyleSpansBuilder;
 import proviz.asci.SensorAddDialog;
 import proviz.codedistribution.CodeDistributionManager;
 import proviz.codegeneration.CodeGenerationTemplate;
@@ -137,7 +136,7 @@ codeArea = new CodeArea();
         codeArea.richChanges()
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved())) // XXX
                 .subscribe(change -> {
-                    codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
+//                    codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
                 });
 
         ImageView addSensorI = new ImageView(new Image(
@@ -328,7 +327,7 @@ prepareSensorListView();
             public void handle(MouseEvent event) {
                 Node node = event.getPickResult().getIntersectedNode();
 
-                if (node instanceof  LabeledText && ((LabeledText) node).getText().compareTo(codeGenerationTemplate.getBoard().getUserFriendlyName())==0)  {
+                if (node instanceof  Label && ((Label) node).getText().compareTo(codeGenerationTemplate.getBoard().getUserFriendlyName())==0)  {
                     if(isRootClicked)
                     {
                         setRight(null);
@@ -548,26 +547,26 @@ prepareSensorListView();
         return dummyBox;
     }
 
-    private  StyleSpans<Collection<String>> computeHighlighting(String text) {
-        Matcher matcher = PATTERN.matcher(text);
-        int lastKwEnd = 0;
-        StyleSpansBuilder<Collection<String>> spansBuilder
-                = new StyleSpansBuilder<>();
-        while(matcher.find()) {
-            String styleClass =
-                    matcher.group("KEYWORD") != null ? "keyword" :
-                            matcher.group("PAREN") != null ? "paren" :
-                                    matcher.group("BRACE") != null ? "brace" :
-                                            matcher.group("BRACKET") != null ? "bracket" :
-                                                    matcher.group("SEMICOLON") != null ? "semicolon" :
-                                                            matcher.group("STRING") != null ? "string" :
-                                                                    matcher.group("COMMENT") != null ? "comment" :
-                                                                            null; /* never happens */ assert styleClass != null;
-            spansBuilder.add(Collections.emptyList(), matcher.start() - lastKwEnd);
-            spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
-            lastKwEnd = matcher.end();
-        }
-        spansBuilder.add(Collections.emptyList(), text.length() - lastKwEnd);
-        return spansBuilder.create();
-    }
+//    private  StyleSpans<Collection<String>> computeHighlighting(String text) {
+//        Matcher matcher = PATTERN.matcher(text);
+//        int lastKwEnd = 0;
+//        StyleSpansBuilder<Collection<String>> spansBuilder
+//                = new StyleSpansBuilder<>();
+//        while(matcher.find()) {
+//            String styleClass =
+//                    matcher.group("KEYWORD") != null ? "keyword" :
+//                            matcher.group("PAREN") != null ? "paren" :
+//                                    matcher.group("BRACE") != null ? "brace" :
+//                                            matcher.group("BRACKET") != null ? "bracket" :
+//                                                    matcher.group("SEMICOLON") != null ? "semicolon" :
+//                                                            matcher.group("STRING") != null ? "string" :
+//                                                                    matcher.group("COMMENT") != null ? "comment" :
+//                                                                            null; /* never happens */ assert styleClass != null;
+//            spansBuilder.add(Collections.emptyList(), matcher.start() - lastKwEnd);
+//            spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
+//            lastKwEnd = matcher.end();
+//        }
+//        spansBuilder.add(Collections.emptyList(), text.length() - lastKwEnd);
+//        return spansBuilder.create();
+//    }
 }
