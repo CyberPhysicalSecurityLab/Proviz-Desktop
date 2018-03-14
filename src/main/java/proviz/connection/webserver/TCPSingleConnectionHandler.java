@@ -31,6 +31,7 @@ public class TCPSingleConnectionHandler implements Runnable {
 
     public void setIsFirmwareTransferMode(AtomicBoolean isFirmwareTransferMode) {
         this.isFirmwareTransferMode = isFirmwareTransferMode;
+
     }
 
     private volatile boolean isExitRequestted;
@@ -141,6 +142,7 @@ public class TCPSingleConnectionHandler implements Runnable {
                         else {
                             if(incomingMessage.length()>0) {
                                 IncomingDeviceData incomingDeviceData = objectMapper.readValue(incomingMessage, IncomingDeviceData.class);
+                                System.out.println("Data aldik");
                                 boardUniqueId = incomingDeviceData.getDeviceId();
                                 ArrayList<Board> boards = DataManager.getInstance().getActiveBoards();
                                 for(Board board: boards)

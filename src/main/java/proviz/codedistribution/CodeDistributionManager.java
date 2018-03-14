@@ -1,6 +1,7 @@
 package proviz.codedistribution;
 
 import freemarker.template.TemplateException;
+import javafx.scene.control.Alert;
 import proviz.ProjectConstants;
 import proviz.codegeneration.*;
 
@@ -74,18 +75,27 @@ public class CodeDistributionManager {
         codeFlashingDialog.dispose();
     }
 
+    private Alert createFlashingDialog()
+    {
+        Alert alert = new Alert(Alert.AlertType.NONE);
+        alert.setTitle("Code Flashing");
+        alert.setHeaderText("Code is Flashing");
+        alert.setContentText("We will close this windows as soon as it is finished.");
 
+        return alert;
+    }
 
     public void flashCode2Device() {
         try {
-            showDialog();
+            Alert alert = createFlashingDialog();
+            //alert.showAndWait();
             setTextCodeGenerationDialog("Code is being generated and flashed..");
              new SwingWorker<Void, Void>() {
                  @Override
                  protected void done() {
                      setTextCodeGenerationDialog("Connection Unit Initializing..");
                      codeGenerationTemplate.getBoard().setProgrammed(true);
-                     closeDialog();
+                     alert.close();
                      connectionThread.execute();
                      super.done();
                  }

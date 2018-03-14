@@ -1,108 +1,88 @@
 package proviz.asci;
 
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
+import javafx.geometry.Insets;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import javafx.scene.text.Text;
 import proviz.ProjectConstants;
 import proviz.codegeneration.CodeGenerationTemplate;
 import proviz.devicedatalibrary.DataManager;
+import proviz.library.utilities.FileOperations;
 import proviz.models.devices.Board;
 
-import javax.swing.*;
-import java.awt.*;
 import java.util.ArrayList;
 
 /**
- * Created by Burak on 1/23/17.
+ * Created by Burak on 8/10/17.
  */
-public class DeviceInformationPanel extends JPanel {
-
-    private JTextField textField1;
-    private JComboBox deviceTypeComboBox;
-    private JLabel deviceNameLabel;
-    private JLabel deviceUniqueId;
-    private JLabel deviceTypeLabel;
-    private JPanel deviceNamePanel;
-    private JPanel deviceUniqueIdPanel;
-    private JPanel deviceTypePanel;
-    private JPanel mainPanel;
+public class DeviceInformationPanel extends GridPane {
+    private Text deviceInformation;
+    private TextField deviceName;
+    private Text deviceUniqueID;
+    private Text uniqueID;
+    private Text deviceTypes;
     private CodeGenerationTemplate template;
 
+    public ChoiceBox<String> getDeviceTypeList() {
+        return deviceTypeList;
+    }
 
+    private ChoiceBox<String> deviceTypeList;
 
-    public  DeviceInformationPanel(CodeGenerationTemplate template)
-    {
-        this.template = template;
+    public DeviceInformationPanel(CodeGenerationTemplate codeGenerationTemplate){
+
+        this.template = codeGenerationTemplate;
         initUI();
-        getRelatedBoards(template.getBoardView().getType());
-
-        add(mainPanel);
-
+//        getRelatedBoards(template.getBoardView().getType());
 
     }
-    public String getDeviceUserFriendlyName()
-    {
-        return textField1.getText();
-    }
+
+    private void initUI(){
+        deviceInformation = new Text("Device Information: ");
+        deviceName = new TextField();
+        deviceName.setPrefWidth(700);
+        add(deviceInformation, 0, 0);
+        add(deviceName, 1, 0);
 
 
-    private void initUI()
-    {
-        mainPanel = new JPanel();
-        mainPanel.setLayout(new GridBagLayout());
-        mainPanel.setMaximumSize(new Dimension(-1, 140));
-        mainPanel.setPreferredSize(new Dimension(980, 140));
-        deviceNamePanel = new JPanel();
-        deviceNamePanel.setLayout(new BorderLayout(40, 0));
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(20, 20, 0, 20);
-        mainPanel.add(deviceNamePanel, gbc);
-        deviceNameLabel = new JLabel();
-        deviceNameLabel.setText("Device Name:");
-        deviceNamePanel.add(deviceNameLabel, BorderLayout.WEST);
-        textField1 = new JTextField();
-        textField1.setColumns(35);
-        deviceNamePanel.add(textField1, BorderLayout.CENTER);
-        deviceUniqueIdPanel = new JPanel();
-        deviceUniqueIdPanel.setLayout(new BorderLayout(20, 0));
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(20, 20, 0, 20);
-        mainPanel.add(deviceUniqueIdPanel, gbc);
-        deviceUniqueId = new JLabel();
-        deviceUniqueId.setText("Device Unique Id:");
-        deviceUniqueIdPanel.add(deviceUniqueId, BorderLayout.WEST);
-        final JLabel label1 = new JLabel();
-        label1.setText(template.getBoardUniqueCode().toString());
-        deviceUniqueIdPanel.add(label1, BorderLayout.CENTER);
-        deviceTypePanel = new JPanel();
-        deviceTypePanel.setLayout(new BorderLayout(40, 0));
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(20, 20, 0, 20);
-        mainPanel.add(deviceTypePanel, gbc);
-        deviceTypeLabel = new JLabel();
-        deviceTypeLabel.setText("Device Type:");
-        deviceTypePanel.add(deviceTypeLabel, BorderLayout.WEST);
-        deviceTypeComboBox = new JComboBox();
-        deviceTypeComboBox.setAlignmentX(0.0f);
-        deviceTypeComboBox.setAlignmentY(0.0f);
-        deviceTypePanel.add(deviceTypeComboBox, BorderLayout.CENTER);
+        Text deviceUniqueID = new Text("Device Unique ID: ");
+        Text uniqueID = new Text();
+        uniqueID.setText(template.getBoard().getUniqueId());
+        add(deviceUniqueID, 0, 1);
+        add(uniqueID, 1, 1);
+
+
+        Text deviceTypes = new Text("Device Type: ");
+        deviceTypeList = new ChoiceBox<String>();
+        deviceTypeList.setPrefWidth(700);
+        getRelatedBoards(template.getBoard().getDevice_type());
+        deviceTypeList.getSelectionModel().selectFirst();
+        deviceTypeList.setPrefWidth(700);
+        add(deviceTypes, 0, 2);
+        add(deviceTypeList, 1, 2);
+
+        setHgap(20);
+        setVgap(20);
+        setPadding(new Insets(20,10 , 0, 20));
 
     }
+
+  public String getSelectedDeviceModelName()
+  {
+      String result = deviceTypeList.getValue();
+      String[] splittedResult = result.split("-");
+      result = splittedResult[1].replaceAll("\\s+","");
+      result = result.toLowerCase();
+
+      return result;
+  }
+
+
+    public String getDeviceName(){
+        return deviceName.getText();
+    }
+
 
     private void getRelatedBoards(ProjectConstants.DEVICE_TYPE device_type)
     {
@@ -112,17 +92,17 @@ public class DeviceInformationPanel extends JPanel {
         {
             if(device_type== board.getDevice_type())
             {
-                deviceTypeComboBox.addItem(board);
+                deviceTypeList.getItems().add(board.toString());
             }
         }
 
     }
 
-    public JComboBox getDeviceTypeComboBox() {
-        return deviceTypeComboBox;
+    public String getDeviceUserFriendlyName()
+    {
+        return deviceName.getText();
     }
 
-    public void setDeviceTypeComboBox(JComboBox deviceTypeComboBox) {
-        this.deviceTypeComboBox = deviceTypeComboBox;
-    }
+
+
 }

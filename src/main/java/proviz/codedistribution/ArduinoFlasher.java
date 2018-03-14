@@ -32,13 +32,14 @@ public class ArduinoFlasher extends CodeFlasher implements WiFiConnectionListene
         prepareTempFile();
         this.isinitialFlash = initialFlash;
         this.codeDistributionManager = codeDistributionManager;
-        this.connection_type = arduinoTemplate.getConnectionType();
+        this.connection_type = arduinoTemplate.getBoard().getConnectionType();
         this.arduinoTemplate = arduinoTemplate;
         try {
             switch (connection_type) {
                 case BLUETOOTH_CLASSIC: {
                     createTempFile(code);
                     this.compilerPortName = "/dev/tty.AdafruitEZ-Link6419-SPP";
+                    //todo burayi device isminden alsana?
                     break;
                 }
                 case INTERNET: {
@@ -79,7 +80,7 @@ public class ArduinoFlasher extends CodeFlasher implements WiFiConnectionListene
 
     private void serialFlash()
     {
-        this.compilerPortName = "/dev/cu.usbmodem14241";
+        this.compilerPortName = "/dev/cu.usbmodem1411";
         createTempFile(code);
     }
 
@@ -136,7 +137,7 @@ public class ArduinoFlasher extends CodeFlasher implements WiFiConnectionListene
     @Override
     public int FlashCode() {
 
-        if(arduinoTemplate.getConnectionType() == ProjectConstants.CONNECTION_TYPE.INTERNET)
+        if(arduinoTemplate.getBoard().getConnectionType() == ProjectConstants.CONNECTION_TYPE.INTERNET)
         {
 if(isinitialFlash)
 {
@@ -194,6 +195,7 @@ else
         }
 
         return null;
+//    return "/Users/Burak/Desktop/Blink.ino.hex";
     }
 
 

@@ -1,165 +1,35 @@
 package proviz;
 
-import proviz.asci.DeviceConfigurationDialog;
+
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.ContextMenuEvent;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import proviz.codegeneration.ArduinoTemplate;
 import proviz.codegeneration.CodeGenerationTemplate;
 import proviz.codegeneration.RaspberryPiTemplate;
 import proviz.connection.DataReceiveListener;
-import proviz.devicedatalibrary.DataManager;
-import proviz.models.connection.IncomingDeviceData;
 import proviz.models.connection.ReceivedDataModel;
-import proviz.models.connection.ReceivedSensorData;
 import proviz.models.devices.Board;
-import proviz.models.uielements.LineModel;
-import proviz.uicomponents.RightClickPopUpMenu;
 
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * Created by Burak on 9/8/16.
  */
-public class BoardView extends JComponent implements ActionListener,MouseMotionListener,MouseListener,DataReceiveListener {
 
-
-    private Point anchorPoint;
-    private CodeGenerationTemplate codeGenerationTemplate;
-    private ProjectConstants.DEVICE_TYPE type;
-    private boolean isSelected;
-    private String receivedData;
-    private LineModel lineModel;
-    private ProjectConstants.DEVICE_TYPE selectedDevice;
-    private ProjectConstants.STATUS_CODE statusCode;
-    private transient Image backgroundImage;
-    private int backgroundImageHeight;
-    private int backgroundImageWidth;
-    private String deviceName;
-    private transient BufferedImage status_img;
-    private PView parentView;
-    private int deviceNumber;
-    private RightClickPopUpMenu rightClickPopUpMenu;
-    private boolean isHaveProblem;
-    private MainEntrance mainEntrance;
-    private boolean isConfigured;
-
-
-
-    public ProjectConstants.STATUS_CODE getStatusCode() {
-        return statusCode;
-    }
-
-    public void setStatusCode(ProjectConstants.STATUS_CODE statusCode) {
-        this.statusCode = statusCode;
-        try {
-            if(statusCode == ProjectConstants.STATUS_CODE.CONNECTION_LOST)
-            {
-                status_img = ImageIO.read(ClassLoader.getSystemResource("icons/nerd.png"));
-            }
-            else if(statusCode == ProjectConstants.STATUS_CODE.CONNECTION_NOT_ESTABLISHED)
-            {
-                status_img = ImageIO.read(ClassLoader.getSystemResource("icons/confused.png"));
-
-            }
-            else if(statusCode == ProjectConstants.STATUS_CODE.CONNECTION_OK)
-            {
-                status_img = ImageIO.read(ClassLoader.getSystemResource("icons/cool.png"));
-
-            }
-            repaint();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public String getDeviceName() {
-        return deviceName;
-    }
-
-
-
-
-
-    public void setDeviceName(String deviceName) {
-        this.deviceName = deviceName;
-        if(deviceName.compareTo("Computer") != 0 ) {
-            if(codeGenerationTemplate.getBoard() != null)
-            codeGenerationTemplate.getBoard().setName(deviceName);
-        }
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        if(e.getClickCount() ==1 && e.getButton() == MouseEvent.BUTTON1 && ((deviceName == null) || deviceName.compareTo("Computer") != 0) )
-        {
-
-
-            if(codeGenerationTemplate.getBoard() != null){
-            mainEntrance.showRightSideBar();
-                mainEntrance.setBoardForRightSideBar(codeGenerationTemplate.getBoard());}
-
-            isSelected = true;
-            ProjectConstants.init().setBoardView(this);
-            parentView.setSelectedBoardView(this);
-            repaint(50L);
-
-        }
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-        if(e.isPopupTrigger()   && ((deviceName == null) || deviceName.compareTo("Computer") != 0))
-        {
-            showPopUpMenu(e);
-        }
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        if(e.isPopupTrigger()  &&  ((deviceName == null) || deviceName.compareTo("Computer") != 0))
-        {
-            showPopUpMenu(e);
-        }
-    }
-
-    @Override
-    public void mouseEntered(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
-    public void showPopUpMenu(MouseEvent e)
-    {
-        rightClickPopUpMenu = new RightClickPopUpMenu();
-        rightClickPopUpMenu.addMenuItem("Program", this);
-        rightClickPopUpMenu.addMenuItem("Configure", this);
-        rightClickPopUpMenu.addMenuItem("Details", this);
-
-        rightClickPopUpMenu.show(this,e.getX(),e.getY());
-    }
-
-
-    public PView getParentView() {
-        return parentView;
-    }
-
-    public void setParentView(PView parentView) {
-        this.parentView = parentView;
-    }
-
-    public boolean isSelected() {
-        return isSelected;
-    }
-
-    public void setSelected(boolean selected) {
-        isSelected = selected;
-    }
+public class BoardView extends Pane implements Serializable,DataReceiveListener {
 
     public CodeGenerationTemplate getCodeGenerationTemplate() {
         return codeGenerationTemplate;
@@ -167,231 +37,254 @@ public class BoardView extends JComponent implements ActionListener,MouseMotionL
 
     public void setCodeGenerationTemplate(CodeGenerationTemplate codeGenerationTemplate) {
         this.codeGenerationTemplate = codeGenerationTemplate;
+    }
+    private CodeGenerationTemplate codeGenerationTemplate;
+    private String receivedData;
+    private VBox newImageBox;
+    private ImageView newDevice;
+    private boolean isClicked;
+    private Label deviceNameLabel;
+
+
+
+    private String deviceName;
+
+
+
+    private Button close;
+    private Node self;
+    private int linkID;
+    private MainEntrance mainEntrance;
+    private LiveDataTable liveDataTable;
+    private boolean isConfigured;
+
+
+
+
+    public BoardView(MainEntrance mainEntrance,Board board) {
+        this.mainEntrance = mainEntrance;
+        if(board.getUserFriendlyName() == null || board.getUserFriendlyName().length() == 0)
+            board.setUserFriendlyName("Device "+GlobalValues.getInstance().getBoardCounter());
+        this.liveDataTable = mainEntrance.getLiveDataTable();
+        GlobalValues.getInstance().increaseBoardCounterbyOne();
+        initUI(board);
 
     }
 
-    public LineModel getLineModel() {
-        return lineModel;
-    }
-
-    public void setLineModel(LineModel lineModel) {
-        this.lineModel = lineModel;
-    }
 
 
 
+    private void initUI(Board board){
 
+        self = this;
 
-    public BoardView(PView parentView, ProjectConstants.DEVICE_TYPE selectedDevice,LiveDataTableModel liveDataTableModel)
-    {
-this.addMouseListener(this);
-this.addMouseMotionListener(this);
+        setMaxWidth(Double.MIN_VALUE);
+        setMaxHeight(Double.MIN_VALUE);
 
-        mainEntrance  = parentView.getParentView();
+        isClicked = false;
+        isConfigured = false;
 
-        isHaveProblem = false;
-        this.parentView = parentView;
-        this.isSelected = false;
-        type = selectedDevice;
-        this.selectedDevice = selectedDevice;
-        try {
-            if(selectedDevice == ProjectConstants.DEVICE_TYPE.ARDUINO) {
-                backgroundImage = ImageIO.read(ClassLoader.getSystemResource("arduino_img.jpg"));
-                codeGenerationTemplate = new ArduinoTemplate(this,liveDataTableModel);
+        setType(board);
 
+        close = new Button();
+        close.setStyle("-fx-background-color: transparent");
+        ImageView closeI = new ImageView(new Image("/icons/small/close_x.png"));
+        closeI.setFitWidth(7);
+        closeI.setPreserveRatio(true);
+        close.setGraphic(closeI);
+        close.setPrefWidth(7);
+        close.setAlignment(Pos.CENTER_RIGHT);
+        setDeviceName(codeGenerationTemplate.getBoard().getUserFriendlyName());
+        newImageBox = new VBox();
+        newImageBox.setMaxWidth(newDevice.getFitWidth());
+
+        newImageBox.setPadding(new Insets(20));
+        newImageBox.getChildren().addAll(close, newDevice, deviceNameLabel);
+
+        getChildren().add(newImageBox);
+        makeDraggable(this);
+
+        this.setOnContextMenuRequested(new EventHandler<ContextMenuEvent>() {
+            @Override
+            public void handle(ContextMenuEvent event) {
+                showPopUpMenu(event);
             }
-            else if(selectedDevice == ProjectConstants.DEVICE_TYPE.BEAGLEBONE) {
-                backgroundImage = ImageIO.read(ClassLoader.getSystemResource("beaglebone_img.jpg"));
+        });
+
+
+        this.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                if (!isClicked) {
+                    // todo right menu need to be shown.
+
+                    System.out.println("boardview !isClicked");
+                    System.out.println(isClicked);
+                    isClicked = true;
+
+
+                } else if(isClicked){
+
+                    System.out.println("boardview isClicked");
+                    System.out.println(isClicked);
+                    isClicked = false;
+
+                }
+                buildBorder(isClicked);
             }
-else if (selectedDevice == ProjectConstants.DEVICE_TYPE.RASPBERRY_PI) {
-                backgroundImage = ImageIO.read(ClassLoader.getSystemResource("raspberrypi_img.png"));
-                codeGenerationTemplate = new RaspberryPiTemplate(this,liveDataTableModel);
-            }
-            else if (selectedDevice == ProjectConstants.DEVICE_TYPE.Server)
-            {
-                backgroundImage = ImageIO.read(ClassLoader.getSystemResource("notebook.png"));
-            }
-
-            setStatusCode(ProjectConstants.STATUS_CODE.CONNECTION_NOT_ESTABLISHED);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-
-        backgroundImageHeight = backgroundImage.getHeight(null);
-        backgroundImageWidth = backgroundImage.getWidth(null);
-        setPreferredSize(new Dimension(backgroundImageWidth+10,backgroundImageHeight+35));
-
-
-
-
-    }
-
-    public BoardView(PView parentView, ProjectConstants.DEVICE_TYPE selectedDevice)
-    {
-        this.addMouseListener(this);
-        this.addMouseMotionListener(this);
-        mainEntrance = parentView.getParentView();
-        isHaveProblem = false;
-        this.parentView = parentView;
-        this.isSelected = false;
-        type = selectedDevice;
-        this.selectedDevice = selectedDevice;
-        try {
-            if(selectedDevice == ProjectConstants.DEVICE_TYPE.ARDUINO) {
-                backgroundImage = ImageIO.read(ClassLoader.getSystemResource("arduino_img.jpg"));
-                codeGenerationTemplate = new ArduinoTemplate(this);
-
-            }
-            else if(selectedDevice == ProjectConstants.DEVICE_TYPE.BEAGLEBONE) {
-                backgroundImage = ImageIO.read(ClassLoader.getSystemResource("beaglebone_img.jpg"));
-            }
-            else if (selectedDevice == ProjectConstants.DEVICE_TYPE.RASPBERRY_PI) {
-                backgroundImage = ImageIO.read(ClassLoader.getSystemResource("raspberrypi_img.png"));
-                codeGenerationTemplate = new RaspberryPiTemplate(this);
-            }
-            else if (selectedDevice == ProjectConstants.DEVICE_TYPE.Server)
-            {
-                backgroundImage = ImageIO.read(ClassLoader.getSystemResource("notebook.png"));
-            }
-
-            setStatusCode(ProjectConstants.STATUS_CODE.CONNECTION_NOT_ESTABLISHED);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-
-        backgroundImageHeight = backgroundImage.getHeight(null);
-        backgroundImageWidth = backgroundImage.getWidth(null);
-        setPreferredSize(new Dimension(backgroundImageWidth+10,backgroundImageHeight+35));
-
-
+        });
 
 
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
+    public void makeDraggable(Node node) {
+        this.setOnMousePressed(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                node.getScene().setCursor(Cursor.MOVE);
+            }
+        });
 
-
-            if (isSelected && type != ProjectConstants.DEVICE_TYPE.Server) {
-                Graphics2D graphics2D = (Graphics2D) g;
-                graphics2D.setColor(Color.RED);
-                graphics2D.setStroke(new BasicStroke(2));
-
-                graphics2D.drawRect(0, 0, getWidth(), getHeight());
-
+        node.setOnMouseReleased(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                node.getScene().setCursor(Cursor.DEFAULT);
 
             }
-        if(isHaveProblem)
-        {
-            Graphics2D graphics2D = (Graphics2D) g;
-            graphics2D.setColor(Color.BLUE);
-            graphics2D.setStroke(new BasicStroke(2));
+        });
 
-            graphics2D.drawRect(0, 0, getWidth(), getHeight());
-        }
-            g.drawImage(backgroundImage, 10, 25, null);
-        if(ProjectConstants.DEVICE_TYPE.Server != type)
-            g.drawImage(status_img, 10, backgroundImageHeight - status_img.getHeight(null) + 25, null);
-        if(receivedData != null && !receivedData.isEmpty())
-            g.drawString(receivedData,10,15);
-        if(deviceName == null || deviceName.length() == 0)
-        {
-            g.drawString(("Device "+deviceNumber), 10, backgroundImageHeight + 35);
+        node.setOnMouseDragged(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+
+                node.setTranslateX(node.getTranslateX() + event.getX() - 45);
+                node.setTranslateY(node.getTranslateY() + event.getY() - 45);
+
+                event.consume();
+
+                node.toFront();
+
+            }
+        });
+
+        close.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                Pane parent = (Pane) self.getParent();
+                parent.getChildren().remove(self);
+
+                for(Node n : parent.getChildren()){
+                    if(n.getTypeSelector().compareTo("DeviceLink") == 0){
+
+                        String nodeID = n.getId();
+                        String linkid = String.valueOf(linkID);
+
+                        if(nodeID.contentEquals(linkid)){
+                            System.out.println("found link");
+                            parent.getChildren().remove(n);
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+
+
+
+
+    }
+
+
+
+
+
+
+    public void buildBorder(Boolean isSelected){
+        if(isSelected){
+            deviceNameLabel.setTextFill(Color.RED);
+            newImageBox.setStyle("-fx-border-radius: 5; -fx-border-color: red");
+            isClicked = true;
+            mainEntrance.setBoardForRightSideBar(codeGenerationTemplate.getBoard());
 
         }
         else{
-            g.drawString(deviceName, 10, backgroundImageHeight + 35);
+            deviceNameLabel.setTextFill(Color.BLACK);
+            newImageBox.setStyle(null);
+            isClicked = false;
+        }
+    }
+
+    private void makeConnected()
+    {
+        deviceNameLabel.setTextFill(Color.BLUE);
+        newImageBox.setStyle("-fx-border-radius: 5; -fx-border-color: blue");
+    }
+
+    public void showPopUpMenu(ContextMenuEvent event) {
+        RightClickPopupMenu rightClickPopupMenu = new RightClickPopupMenu(mainEntrance,codeGenerationTemplate);
+        rightClickPopupMenu.show(newImageBox, event.getScreenX(), event.getScreenY());
+
+    }
+
+    public void setType(Board board){
+        if(board.getDevice_type() == ProjectConstants.DEVICE_TYPE.ARDUINO){
+            newDevice = new ImageView(new Image(getClass().
+                    getResourceAsStream("/arduino_img.jpg")));
+            codeGenerationTemplate = new ArduinoTemplate(this,liveDataTable);
 
         }
+        else if(board.getDevice_type() == ProjectConstants.DEVICE_TYPE.RASPBERRY_PI){
+            newDevice = new ImageView(new Image(getClass().
+                    getResourceAsStream("/raspberrypi_img.png")));
+            codeGenerationTemplate = new RaspberryPiTemplate(this,liveDataTable);
 
-
-
-
-
-    }
-    @Override
-    public void mouseDragged(MouseEvent e) {
-        int x = anchorPoint.x;
-        int y = anchorPoint.y;
-        Point mouseLocation = e.getLocationOnScreen();
-
-        Point desiredLocation = new Point(mouseLocation.x-backgroundImageWidth/2,mouseLocation.y-getParent().getLocationOnScreen().y - backgroundImageHeight/2);
-
-        setLocation(desiredLocation);
-        parentView.getConnectionLinesComponent().removeLine(lineModel);
-        parentView.getConnectionLinesComponent().addLine(lineModel);
-    }
-
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        anchorPoint = e.getLocationOnScreen();
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    }
-
-
-
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-       if(e.getActionCommand().compareTo("Program") == 0)
-       {
-           if(codeGenerationTemplate.getBoard() == null)
-           {
-               JOptionPane.showMessageDialog(null, "You must configure board first.");
-           }
-           else {
-               DeviceProgrammingScreen deviceProgrammingScreen = new DeviceProgrammingScreen(codeGenerationTemplate);
-               deviceProgrammingScreen.show();
-           }
-
-       }
-        else if(e.getActionCommand().compareTo("Configure") == 0)
-       {
-           DeviceConfigurationDialog deviceConfigurationDialog = new DeviceConfigurationDialog(codeGenerationTemplate);
-           deviceConfigurationDialog.setPreferredSize(new Dimension(980,600));
-           deviceConfigurationDialog.setMinimumSize(new Dimension(980,600));
-
-
-           deviceConfigurationDialog.pack();
-           deviceConfigurationDialog.setVisible(true);
-       }
-        else if(e.getActionCommand().compareTo("Details") == 0)
-       {
-
-       }
-    }
-
-    public ProjectConstants.DEVICE_TYPE getType() {
-        return type;
-    }
-
-    public void setType(ProjectConstants.DEVICE_TYPE type) {
-        this.type = type;
-    }
-
-    public int getDeviceNumber() {
-        return deviceNumber;
-    }
-
-    public void setDeviceNumber(int deviceNumber) {
-        this.deviceNumber = deviceNumber;
-    }
-
-
-
-    @Override
-    public void onReceivedData(Board board,ReceivedDataModel receivedData) {
-        isHaveProblem =false;
-        for(ReceivedSensorData receivedSensorData:receivedData.getSensors())
-        {
-            if((receivedSensorData.getSensorStatus() == ProjectConstants.SENSOR_STATUS.UPPERTHRESHOLDEXCEED) || (receivedSensorData.getSensorStatus() == ProjectConstants.SENSOR_STATUS.LOWERTHRESHOLDEXCEED))
-                isHaveProblem = true;
-            repaint();
         }
+        else if(board.getDevice_type() == ProjectConstants.DEVICE_TYPE.BEAGLEBONE){
+            newDevice = new ImageView(new Image(getClass().
+                    getResourceAsStream("/beaglebone_img.jpg")));
+            // todo
+        }
+
+        codeGenerationTemplate.setBoard(board);
+        codeGenerationTemplate.getBoard().setCodeGenerationTemplate(codeGenerationTemplate);
+
+
+    }
+
+    public String getDeviceName(){
+        return deviceName;
+    }
+
+
+    public void registerLinkID(int linkid){
+        linkID = linkid;
+    }
+
+
+    public boolean getIsClicked(){
+        return isClicked;
+    }
+
+    public void setIsClicked(boolean b){
+        isClicked = b;
+    }
+
+    // burak
+
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
+        deviceNameLabel = new Label();
+//        deviceName = ("Device " + toString().valueOf(counter));
+        deviceNameLabel.setText(deviceName);
+            if(codeGenerationTemplate != null &&codeGenerationTemplate.getBoard() != null)
+                codeGenerationTemplate.getBoard().setName(deviceName);
+
+    }
+
+
+    @Override
+    public void onReceivedData(Board board, ReceivedDataModel receivedData) {
+
     }
 
     @Override
@@ -401,6 +294,7 @@ else if (selectedDevice == ProjectConstants.DEVICE_TYPE.RASPBERRY_PI) {
 
     @Override
     public void connectionEstablished(Board board) {
+        makeConnected();
 
     }
 
@@ -411,4 +305,8 @@ else if (selectedDevice == ProjectConstants.DEVICE_TYPE.RASPBERRY_PI) {
     public void setConfigured(boolean configured) {
         isConfigured = configured;
     }
+
+
 }
+
+

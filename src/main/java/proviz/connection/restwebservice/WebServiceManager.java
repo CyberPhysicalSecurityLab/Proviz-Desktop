@@ -17,7 +17,6 @@ import javax.ws.rs.Path;
 /**
  * Created by Burak on 1/11/17.
  */
-@Path("/")
 public class WebServiceManager {
     // The Java method will process HTTP GET requests
 

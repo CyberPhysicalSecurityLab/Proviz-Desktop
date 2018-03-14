@@ -1,406 +1,451 @@
+/*
+Chester
+*/
+
+
 package proviz;
 
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
+import javafx.scene.layout.*;
+import javafx.scene.image.Image;
+import javafx.scene.transform.Scale;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import proviz.models.Topology;
 import proviz.models.devices.Board;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.geometry.Side;
+import javafx.print.*;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import proviz.models.devices.Sensor;
 import proviz.models.uielements.BoardConnectionViewEntry;
 import proviz.thirdpartyconnections.tablet.TabletConnectionCreatorDialog;
 import proviz.uicomponents.rightsidebar.*;
 
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.TitledBorder;
+
 import java.awt.*;
-import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DragGestureEvent;
-import java.awt.dnd.DragGestureListener;
-import java.awt.dnd.DragSource;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.util.ArrayList;
+import java.io.File;
+import java.io.IOException;
+import java.util.Optional;
+
 
 /**
  * Created by Burak on 9/4/16.
  */
-public class MainEntrance implements ActionListener, DragGestureListener, MouseListener {
-    private JButton hideLeftPanelBttn;
-    private JPanel mainPanel;
-    private JTabbedPane tabbedPane1;
-    private JToolBar toolBar;
-    private JToolBar firstTopMenu;
-    private JButton button2;
-    private JButton button3;
-    private JButton button4;
-    private JToolBar deviceStatusToolbar;
-    public JPanel rightBarPanel;
-    private JButton button1;
-    private JButton tabletButton;
-    private JPanel dummy;
-    private JMenuBar jMenuBar;
-    private JMenu fileMenu;
-    private JMenu editMenu;
-    private JMenu toolsMenu;
-    private JMenu helpMenu;
-    private LiveDataTableModel liveDataTableModel;
-    private SensorListView sensorListView;
-    private BoardDetailView boardDetailView;
-    private BoardConnetionView boardConnetionView;
+public class MainEntrance extends AnchorPane {
 
-    @Override
-    public void dragGestureRecognized(DragGestureEvent dge) {
-        dge.startDrag(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR), (DeviceLabel) dge.getComponent());
+
+
+
+
+    private DeviceSelectionBox dvs;
+    private static TabPane tab;
+    private Tab topology;
+    private static Tab dataTable;
+    private static PView pView;
+
+    private LiveDataTable dt;
+    private Topology allBoards;
+    private static Stage stage;
+    private static StackPane topologyStack;
+    private Node self;
+    private RightSideBar rightSideBar;
+    private AnchorPane centerPane;
+
+
+
+    private MainEntrance mainEntrance;
+
+
+    public MainEntrance(Stage stage) {
+
+        // setLiveDataTableModel(new LiveDataTableModel());
+        // LiveDataTable liveDataTable = new LiveDataTable(getLiveDataTableModel());
+        //
+        // tabbedPane1.add(new JScrollPane(liveDataTable), "Data Table");
+        //
+        // new PDropListener(pView, liveDataTableModel);
+
+        HBox topPanel = new HBox();
+        mainEntrance = this;
+        self = this;
+        Image openFolder = new Image(MainEntrance.class.getResourceAsStream("/icons/small/opened_folder.png"));
+        Image save = new Image(MainEntrance.class.getResourceAsStream("/icons/small/save.png"));
+        Image print = new Image(MainEntrance.class.getResourceAsStream("/icons/small/print.png"));
+        Image tablet = new Image(MainEntrance.class.getResourceAsStream("/icons/small/android_tablet.png"));
+        Image settings = new Image(MainEntrance.class.getResourceAsStream("/icons/small/settings.png"));
+
+        Button openButt = new Button();
+        openButt.setGraphic(new ImageView(openFolder));
+        openButt.setMaxSize(openButt.getWidth()-30, openButt.getHeight()-30);
+
+        Button saveButt = new Button();
+        saveButt.setGraphic(new ImageView(save));
+
+        Button printButt = new Button();
+        printButt.setGraphic(new ImageView(print));
+
+        Button tabButt = new Button();
+        tabButt.setGraphic(new ImageView(tablet));
+
+        Button settButt = new Button();
+        settButt.setGraphic(new ImageView(settings));
+
+        topPanel.getChildren().addAll(openButt, saveButt, printButt, tabButt, settButt);
+        topPanel.setSpacing(20);
+        topPanel.setAlignment(Pos.CENTER_LEFT);
+        topPanel.setPadding(new Insets(10, 0, 5, 10));
+
+        getChildren().add(topPanel);
+        setTopAnchor(topPanel,2.0);
+        setLeftAnchor(topPanel,2.0);
+
+        dvs = new DeviceSelectionBox();
+        VBox vbox = new VBox(dvs);
+        vbox.setOpacity(100);
+        vbox.toFront();
+        getChildren().add(vbox);
+        setLeftAnchor(vbox,0.0);
+        setBottomAnchor(vbox,2.0);
+        setTopAnchor(vbox,2.0);
+        vbox.setStyle("-fx-background-color: inherit");
+        dvs.setTranslateY(40);
+
+        topPanel.toFront();
+
+        tab = new TabPane();
+        tab.setStyle("-fx-border-color: lightgray;" +
+                "-fx-border-radius: 2");
+
+        topology = new Tab("Topology");
+        topology.setClosable(false);
+        pView = new PView(this);
+
+        registerOnDragDropped(pView);
+
+
+
+        dataTable = new Tab("Data Table");
+        dataTable.setClosable(false);
+        dt = new LiveDataTable();
+        dataTable.setContent(dt);
+
+        tab.setSide(Side.BOTTOM);
+        tab.getTabs().addAll(topology, dataTable);
+
+        topologyStack = new StackPane();
+        //topology.setContent(topologyStack);
+        //topologyStack.getChildren().add(pView);
+
+        topologyStack.getChildren().add(tab);
+        topology.setContent(pView);
+
+        centerPane = new AnchorPane();
+        centerPane.setPrefSize(945,550);
+        centerPane.getChildren().add(tab);
+        centerPane.setTopAnchor(tab,0.0);
+        centerPane.setBottomAnchor(tab,0.0);
+        centerPane.setLeftAnchor(tab,0.0);
+        centerPane.setRightAnchor(tab,0.0);
+        centerPane.toBack();
+
+        getChildren().add(centerPane);
+        setBottomAnchor(centerPane,2.0);
+        setTopAnchor(centerPane,55.0);
+        setRightAnchor(centerPane,2.0);
+        setLeftAnchor(centerPane,80.0);
+
+
+        tabButt.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+
+                TabletConnectionCreatorDialog tabletConnectionCreatorDialog =
+                        new TabletConnectionCreatorDialog(mainEntrance);
+
+                addToStack(true, tabletConnectionCreatorDialog);
+            }
+        });
+
+        saveButt.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+
+                saveData();
+
+            }
+        });
+
+        openButt.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    loadSavedFile(stage);
+                }
+                catch (Exception ex)
+                {
+                    ex.printStackTrace();
+                }
+
+            }
+        });
+
+        printButt.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                boolean onTab = tab.isVisible();
+
+                if(onTab) {
+                    PrinterJob job = PrinterJob.createPrinterJob();
+
+                    if(job == null){
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setHeaderText("No Printers Available");
+                        alert.setContentText("There are no printer available. Set up a printer to continue.");
+                        alert.show();
+                    }
+
+                    else if (job != null && job.showPageSetupDialog(getScene().getWindow())) {
+                        Printer printer = job.getPrinter();
+                        PageLayout pageLayout = printer.createPageLayout(Paper.A4,
+                                PageOrientation.LANDSCAPE, Printer.MarginType.DEFAULT);
+
+
+                        double width = getWidth();
+                        double height = getHeight();
+
+                        PrintResolution resolution = job.getJobSettings().getPrintResolution();
+
+                        width /= resolution.getFeedResolution();
+                        height /= resolution.getCrossFeedResolution();
+
+                        double scaleX = pageLayout.getPrintableWidth() / width / 600;
+                        double scaleY = pageLayout.getPrintableHeight() / height / 600;
+
+                        Scale scale = new Scale(scaleX, scaleY);
+
+//                        getLeft().setVisible(false);
+//                        getTop().setVisible(false);
+//                        getTransforms().add(scale);
+
+                        boolean success = job.printPage( self);
+                        if (success) {
+                            job.endJob();
+                        }
+
+//                        getTransforms().remove(scale);
+//                        getLeft().setVisible(true);
+//                        getTop().setVisible(true);
+                    }
+                }
+                else{
+
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setHeaderText("Exit Configuration Panel");
+                    alert.setContentText("You may only print Board Topology. Please exit configuration or programming " +
+                            "panel.");
+                    alert.show();
+                }
+            }
+        });
+
+        rightSideBar = new RightSideBar();
+//        this.setRight(rightSideBar);
+
     }
 
-    public MainEntrance(JFrame window) {
+    private void saveData() { //saves existing BoardView data to json file
 
-        $$$setupUI$$$();
-        window.setJMenuBar(initializeMenu());
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Topology");
 
+        FileChooser.ExtensionFilter ext = new FileChooser.ExtensionFilter("JSON", ".proviz");
+        fileChooser.getExtensionFilters().add(ext);
+        File file = fileChooser.showSaveDialog(new Stage());
 
-        PView pView = new PView(this);
-        pView.setPreferredSize(new Dimension(640, 480));
+        ObjectMapper mapper = new ObjectMapper();
 
+        allBoards = new Topology();
 
-        GridBagLayout gridBagLayout = new GridBagLayout();
-        toolBar.setLayout(gridBagLayout);
-        Border border = BorderFactory.createEtchedBorder();
-        toolBar.setBorder(border);
-        toolBar.setMargin(new Insets(5, 10, 10, 5));
-tabletButton.addMouseListener(this);
-        toolBar.setOrientation(SwingConstants.VERTICAL);
-        GridBagConstraints gridBagConstraintsArduino = new GridBagConstraints();
-        gridBagConstraintsArduino.insets = new Insets(10, 10, 10, 10);
-        gridBagConstraintsArduino.gridx = 0;
-        gridBagConstraintsArduino.fill = GridBagConstraints.VERTICAL;
-        gridBagConstraintsArduino.gridy = 0;
+        for (Node n : pView.getChildren()) {
+            if (n.getTypeSelector().compareTo("BoardView") == 0) {
+                BoardView bV = (BoardView) n;
+                allBoards.getCodeGenerationTemplates().add(bV.getCodeGenerationTemplate());
 
-        GridBagConstraints gridBagConstraintsBeagle = new GridBagConstraints();
-        gridBagConstraintsBeagle.insets = new Insets(10, 10, 10, 10);
-        gridBagConstraintsBeagle.fill = GridBagConstraints.VERTICAL;
-        gridBagConstraintsBeagle.gridx = 0;
-        gridBagConstraintsBeagle.gridy = 1;
-
-
-        GridBagConstraints gridBagConstraintsRaspb = new GridBagConstraints();
-        gridBagConstraintsRaspb.insets = new Insets(10, 10, 10, 10);
-        gridBagConstraintsRaspb.gridx = 0;
-        gridBagConstraintsRaspb.fill = GridBagConstraints.VERTICAL;
-        gridBagConstraintsRaspb.gridy = 2;
-
-        DeviceLabel deviceLabel = new DeviceLabel(DeviceLabel.DEVICE_TYPES.Ardunio);
-
-        DeviceLabel deviceLabel_rasp = new DeviceLabel(DeviceLabel.DEVICE_TYPES.RaspberryPI);
-        DeviceLabel deviceLabel_beagle = new DeviceLabel(DeviceLabel.DEVICE_TYPES.BeagleBone);
-        deviceLabel.setPview(pView);
-        deviceLabel_rasp.setPview(pView);
-        deviceLabel_beagle.setPview(pView);
-
-
-        SideBarMenu rightsideBar = new SideBarMenu(SideBarMenu.SideBarMode.TOP_LEVEL, false, 240, true);
-        sensorListView = new SensorListView();
-        sensorListView.setSize(new Dimension(260, pView.getPreferredSize().height / 3));
-        sensorListView.setLayout(new BorderLayout(240, pView.getPreferredSize().height / 3));
-
-
-        boardConnetionView = new BoardConnetionView();
-
-        boardDetailView = new BoardDetailView();
-        boardDetailView.setSize(new Dimension(240, pView.getPreferredSize().height / 3));
-
-
-        SideBarMenuSection sidebarSection = new SideBarMenuSection(rightsideBar, "Sensors", sensorListView, null);
-        sidebarSection.expand();
-        SideBarMenuSection sidebarSection1 = new SideBarMenuSection(rightsideBar, "Connection", boardConnetionView, null);
-        sidebarSection1.expand();
-        SideBarMenuSection sidebarSection2 = new SideBarMenuSection(rightsideBar, "Device", boardDetailView, null);
-
-
-        rightsideBar.addSection(sidebarSection);
-        rightsideBar.addSection(sidebarSection1);
-        rightsideBar.addSection(sidebarSection2);
-        rightBarPanel.add(rightsideBar, BorderLayout.CENTER);
-        rightBarPanel.setVisible(false);
-
-
-
-        toolBar.add(deviceLabel, gridBagConstraintsArduino);
-        toolBar.add(deviceLabel_beagle, gridBagConstraintsBeagle);
-        toolBar.add(deviceLabel_rasp, gridBagConstraintsRaspb);
-        tabbedPane1.add(pView, "Topology");
-        setLiveDataTableModel(new LiveDataTableModel());
-        LiveDataTable liveDataTable = new LiveDataTable(getLiveDataTableModel());
-
-        tabbedPane1.add(new JScrollPane(liveDataTable), "Data Table");
-
-
-        new PDropListener(pView, liveDataTableModel);
-        DragSource ds = new DragSource();
-        ds.createDefaultDragGestureRecognizer(deviceLabel, DnDConstants.ACTION_MOVE, this);
-        DragSource ds1 = new DragSource();
-        ds1.createDefaultDragGestureRecognizer(deviceLabel_beagle, DnDConstants.ACTION_MOVE, this);
-        DragSource ds2 = new DragSource();
-        ds2.createDefaultDragGestureRecognizer(deviceLabel_rasp, DnDConstants.ACTION_MOVE, this);
-    }
-
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if (e.getActionCommand().compareTo(ActionCommands.hideLeftPanelClicked) == 0) {
-
+            }
         }
 
+        try {
+            mapper.writeValue(file, allBoards);
+            String jsonInString = mapper.writeValueAsString(allBoards);
+            System.out.println(jsonInString);
+        }
+        catch (IOException ioe) {
+            System.out.println(ioe);
+        }
 
     }
 
+    public void registerOnDragDropped(PView pView) {
+
+
+        pView.setOnDragOver(new EventHandler<DragEvent>() {
+            @Override
+            public void handle(DragEvent event) {
+                event.acceptTransferModes(TransferMode.ANY);
+                pView.setComputerViewEffect(true);
+            }
+        });
+
+
+        pView.setOnDragDropped(new EventHandler<DragEvent>() {
+            @Override
+            public void handle(DragEvent event) {
+
+                Dragboard db = event.getDragboard();
+                final String id = db.getString();
+
+                double mousePosY = event.getY();
+                double mousePosX = event.getX();
+
+                Board board = new Board();
+                board.setDevice_type(ProjectConstants.DEVICE_TYPE.valueOf(db.getString()));
+                board.setX(mousePosX);
+                board.setY(mousePosY);
+                pView.createBoardView(board);
+
+                event.setDropCompleted(true);
+
+            }
+        });
+
+        pView.setOnDragExited(new EventHandler<DragEvent>() {
+            @Override
+            public void handle(DragEvent event) {
+                event.acceptTransferModes(TransferMode.ANY);
+                event.consume();
+                pView.setComputerViewEffect(false);
+            }
+        });
+    }
+    public void loadSavedFile(Stage stage) throws IOException {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Existing Project");
+        File selectedFile = fileChooser.showOpenDialog(new Stage());
+
+        if (selectedFile != null) {
+
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setHeaderText("Open Your Project");
+            alert.setContentText("Would you like to open your project in this window or a new window?");
+
+            ButtonType thisWindowButton = new ButtonType("This Window");
+            ButtonType newWindowButton = new ButtonType("New Window");
+            ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            alert.getButtonTypes().setAll(thisWindowButton, newWindowButton, cancelButton);
+
+            Optional<ButtonType> result = alert.showAndWait();
+
+            if(result.get() == thisWindowButton){
+                openProject(stage, selectedFile);
+            }
+            else if(result.get() == newWindowButton){
+                Stage newStage = new Stage();
+                openProject(newStage, selectedFile);
+
+            }
+
+
+        }
+    }
+
+    public void openProject(Stage stage, File file) throws IOException{
+        ObjectMapper mapper = new ObjectMapper();
+        Topology allBoards = null;
+        try {
+            allBoards = mapper.readValue(file, Topology.class);
+
+            MainEntrance mainEntrance = new MainEntrance(stage);
+            stage.setScene(new Scene(mainEntrance, 1024, 600));
+            stage.setX(100);
+            stage.setY(50);
+
+            System.out.println(allBoards);
+
+//            for (Board boardModel : allBoards.getBoardModels()) {
+//
+//                pView.createBoardView(boardModel);
+//
+//            }
+
+            stage.show();
+
+        } catch (IOException ioe) {
+            System.out.println(ioe.getStackTrace());
+        }
+    }
+    public  void addToStack(boolean add, Pane pane){
+
+
+
+        if(add) {
+           centerPane.getChildren().add(pane);
+           centerPane.setTopAnchor(pane,4.0);
+           centerPane.setRightAnchor(pane,4.0);
+           centerPane.setLeftAnchor(pane,4.0);
+           centerPane.setBottomAnchor(pane,4.0);
+           centerPane.toBack();
+
+           pane.prefHeightProperty().bind(centerPane.heightProperty());
+           pane.prefWidthProperty().bind(centerPane.widthProperty());
+           tab.setVisible(false);
+
+
+        }else{
+            centerPane.getChildren().clear();
+            centerPane.getChildren().add(tab);
+            tab.setVisible(true);
+
+        }
+    }
+
+    public static Stage getStage(){
+        return stage;
+    }
 
     public void setBoardForRightSideBar(Board board) {
-        if (board == null) {
-
-
-        } else {
-            ArrayList<Sensor> sensors = board.getSensors();
-            sensorListView.removeAllLabels();
-
-            for (Sensor sensor : sensors) {
-                sensorListView.addSensor(sensor.getName());
-            }
-            ArrayList<BoardConnectionViewEntry> boardConnectionViewEntries = new ArrayList<>();
-            boardConnetionView.setConnectionType(board.getConnectionType());
-
-            switch (board.getConnectionType()) {
-                case INTERNET: {
-                    BoardConnectionViewEntry boardConnectionViewEntry = new BoardConnectionViewEntry("Ip Address: ", ProjectConstants.init().getIpAddress());
-                    boardConnectionViewEntries.add(boardConnectionViewEntry);
-                    break;
-                }
-                case BLUETOOTH_CLASSIC: {
-
-                    BoardConnectionViewEntry boardConnectionViewEntry = new BoardConnectionViewEntry("BT Address: ", "3C-15-C2-CB-F1-09");
-                    boardConnectionViewEntries.add(boardConnectionViewEntry);
-
-                    break;
-                }
-                case SERIAL: {
-                    break;
-                }
-            }
-
-
-            boardConnetionView.changeBoard(boardConnectionViewEntries);
-
-
-            boardDetailView.changeData(board);
-
-            rightBarPanel.revalidate();
-        }
+        setRightSideBar();
+    }
+    public void setRightSideBar(){
+//        this.setRight(rightSideBar);
+    }
+    public void hideRightSideBar()
+    {
+//        this.setRight(null);
     }
 
-    public void showRightSideBar() {
-
-        rightBarPanel.setVisible(true);
-    }
-
-    public void hideRightSideBar() {
-        rightBarPanel.setVisible(false);
-    }
-
-    public JPanel getMainPanel() {
-        return mainPanel;
-    }
-
-    public void setMainPanel(JPanel mainPanel) {
-        this.mainPanel = mainPanel;
-    }
-
-    private void createUIComponents() {
-        FlowLayout flowLayoutTopMenu = new FlowLayout(10);
-        flowLayoutTopMenu.setAlignment(FlowLayout.LEFT);
-        FlowLayout flowLayoutDeviceInfoMenu = new FlowLayout(10);
-        flowLayoutDeviceInfoMenu.setAlignment(FlowLayout.LEFT);
-        firstTopMenu = new JToolBar(JToolBar.HORIZONTAL);
-
-        deviceStatusToolbar = new JToolBar(JToolBar.HORIZONTAL);
-        deviceStatusToolbar.setLayout(flowLayoutDeviceInfoMenu);
-        deviceStatusToolbar.setVisible(false);
-        firstTopMenu.setLayout(flowLayoutTopMenu);
+    public LiveDataTable getLiveDataTable() {
+        return dt;
     }
 
 
-    private JMenuBar initializeMenu() {
-        jMenuBar = new JMenuBar();
-        fileMenu = new JMenu("File");
-        editMenu = new JMenu("Edit");
-        toolsMenu = new JMenu("Tools");
-        helpMenu = new JMenu("Help");
-        jMenuBar.add(fileMenu);
-        jMenuBar.add(editMenu);
-        jMenuBar.add(toolsMenu);
-        jMenuBar.add(helpMenu);
-        return jMenuBar;
-    }
 
-    public LiveDataTableModel getLiveDataTableModel() {
-        return liveDataTableModel;
-    }
 
-    public void setLiveDataTableModel(LiveDataTableModel liveDataTableModel) {
-        this.liveDataTableModel = liveDataTableModel;
-    }
 
-    public SensorListView getSensorListView() {
-        return sensorListView;
-    }
 
-    public void setSensorListView(SensorListView sensorListView) {
-        this.sensorListView = sensorListView;
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        if (e.getSource() == tabletButton) {
-
-            TabletConnectionCreatorDialog dialog = new TabletConnectionCreatorDialog();
-            dialog.pack();
-            dialog.setVisible(true);
-        }
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseEntered(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
-
-    /**
-     * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
-     */
-    private void $$$setupUI$$$() {
-        createUIComponents();
-        mainPanel = new JPanel();
-        mainPanel.setLayout(new GridBagLayout());
-        mainPanel.setMinimumSize(new Dimension(1024, 768));
-        mainPanel.setPreferredSize(new Dimension(1024, 768));
-        mainPanel.setRequestFocusEnabled(false);
-        final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        panel1.setBackground(new Color(-1118482));
-        panel1.setVisible(true);
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.05;
-        gbc.fill = GridBagConstraints.BOTH;
-        mainPanel.add(panel1, gbc);
-        firstTopMenu.setBackground(new Color(-2368549));
-        firstTopMenu.setBorderPainted(false);
-        firstTopMenu.setFloatable(false);
-        firstTopMenu.setFocusCycleRoot(true);
-        firstTopMenu.setFocusTraversalPolicyProvider(true);
-        firstTopMenu.setInheritsPopupMenu(false);
-        firstTopMenu.setMargin(new Insets(5, 10, 5, 10));
-        firstTopMenu.setRollover(true);
-        firstTopMenu.putClientProperty("JToolBar.isRollover", Boolean.TRUE);
-        panel1.add(firstTopMenu, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_NORTH, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 1, false));
-        firstTopMenu.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, new Color(-10830936)));
-        button1 = new JButton();
-        button1.setIcon(new ImageIcon(getClass().getResource("/icons/small/opened_folder.png")));
-        button1.setText("");
-        firstTopMenu.add(button1);
-        button2 = new JButton();
-        button2.setIcon(new ImageIcon(getClass().getResource("/icons/small/save.png")));
-        button2.setText("");
-        firstTopMenu.add(button2);
-        final JToolBar.Separator toolBar$Separator1 = new JToolBar.Separator();
-        firstTopMenu.add(toolBar$Separator1);
-        button3 = new JButton();
-        button3.setIcon(new ImageIcon(getClass().getResource("/icons/small/print.png")));
-        button3.setText("");
-        firstTopMenu.add(button3);
-        final JToolBar.Separator toolBar$Separator2 = new JToolBar.Separator();
-        firstTopMenu.add(toolBar$Separator2);
-        tabletButton = new JButton();
-        tabletButton.setIcon(new ImageIcon(getClass().getResource("/icons/small/android_tablet.png")));
-        tabletButton.setText("");
-        firstTopMenu.add(tabletButton);
-        final JSeparator separator1 = new JSeparator();
-        firstTopMenu.add(separator1);
-        button4 = new JButton();
-        button4.setIcon(new ImageIcon(getClass().getResource("/icons/small/settings.png")));
-        button4.setText("");
-        firstTopMenu.add(button4);
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridBagLayout());
-        panel1.add(panel2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        tabbedPane1 = new JTabbedPane();
-        tabbedPane1.setTabPlacement(3);
-        gbc = new GridBagConstraints();
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        panel2.add(tabbedPane1, gbc);
-        toolBar = new JToolBar();
-        toolBar.setFloatable(false);
-        toolBar.setFocusCycleRoot(true);
-        toolBar.setMargin(new Insets(5, 5, 0, 5));
-        toolBar.setOrientation(1);
-        toolBar.setRollover(true);
-        toolBar.putClientProperty("JToolBar.isRollover", Boolean.TRUE);
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.02;
-        gbc.weighty = 1.0;
-        gbc.anchor = GridBagConstraints.NORTHEAST;
-        panel2.add(toolBar, gbc);
-        rightBarPanel = new JPanel();
-        rightBarPanel.setLayout(new BorderLayout(0, 0));
-        rightBarPanel.setBackground(new Color(-12828863));
-        gbc = new GridBagConstraints();
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.weightx = 0.3;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        panel2.add(rightBarPanel, gbc);
-        final JPanel spacer1 = new JPanel();
-        gbc = new GridBagConstraints();
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        mainPanel.add(spacer1, gbc);
-    }
-
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$() {
-        return mainPanel;
-    }
 }
 

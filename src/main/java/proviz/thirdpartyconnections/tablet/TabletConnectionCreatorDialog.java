@@ -1,8 +1,23 @@
 package proviz.thirdpartyconnections.tablet;
 
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
-import com.intellij.uiDesigner.core.Spacer;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+import proviz.MainEntrance;
+import proviz.PView;
 import proviz.ProjectConstants;
 import proviz.codedistribution.CodeDistributionManager;
 import proviz.codegeneration.CodeGenerationTemplate;
@@ -24,84 +39,34 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.UUID;
 
-public class TabletConnectionCreatorDialog extends JDialog {
-    private JPanel contentPane;
-    private JButton buttonPositive;
-    private JButton buttonNegative;
-    private JPanel mainPanel;
-
+public class TabletConnectionCreatorDialog extends BorderPane {
+    private ButtonBar buttonBar;
+    private javafx.scene.control.Button negativeButton;
+    private javafx.scene.control.Button postiveButton;
+    private javafx.scene.control.Button closeButton;
     private IpAddressFormPanel ipAddressFormPanel;
     private TabletConnectionFinalPanel tabletConnectionFinalPanel;
+    private String ipAddress;
+    private SwipePanelsAnimation spa;
+    private StackPane root;
+    private PView pView;
+    private Pane self;
+    private MainEntrance mainEntrance;
 
-    private SwipePanelsAnimation swipePanelsAnimation;
-
-    public TabletConnectionCreatorDialog() {
-        setContentPane(contentPane);
-        setModal(true);
-        getRootPane().setDefaultButton(buttonPositive);
-
-        initializePanels();
-        buttonPositive.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onOK();
-            }
-        });
-
-        buttonNegative.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        });
-
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });
-
-        contentPane.registerKeyboardAction(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-
-
+    public TabletConnectionCreatorDialog(MainEntrance mainEntrance) {
+        this.mainEntrance = mainEntrance;
+        this.self = this;
+        this.pView = pView;
+        initUI();
         ProjectConstants.init().setSessionUUDIwithTablet(sessionIDCreator());
     }
 
     private void initializePanels() {
-        ipAddressFormPanel = new IpAddressFormPanel();
-        tabletConnectionFinalPanel = new TabletConnectionFinalPanel();
-
-        ipAddressFormPanel.initiliazeUI();
-        tabletConnectionFinalPanel.initiliazeUI();
-
-        Dimension dimension = new Dimension(860, 560);
-        mainPanel.setPreferredSize(dimension);
-        mainPanel.setMaximumSize(dimension);
-        mainPanel.setMinimumSize(dimension);
-
-        ArrayList<JPanel> panels = new ArrayList<>();
-        panels.add(ipAddressFormPanel);
-        panels.add(tabletConnectionFinalPanel);
-        final Thread t0 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                swipePanelsAnimation = new SwipePanelsAnimation(mainPanel, panels);
-            }
-        });
-        t0.setDaemon(true);
-        t0.start();
 
     }
 
@@ -117,47 +82,50 @@ public class TabletConnectionCreatorDialog extends JDialog {
     }
 
     private void wrongIPAddress() {
-        JOptionPane.showMessageDialog(this, "IP Address is not valid or is not reachable at moment.");
-        if (swipePanelsAnimation.getActivePanel() instanceof TabletConnectionFinalPanel) {
-            swipePanelsAnimation.RightSwipe();
+        Alert wrongIPAdress = new Alert(Alert.AlertType.ERROR);
+        wrongIPAdress.setHeaderText("Wrong IP Adress");
+        wrongIPAdress.setContentText("IP Address is not valid or is not reachable at moment.");
+        wrongIPAdress.showAndWait();
+        if (spa.getActivePane() instanceof TabletConnectionFinalPanel) {
+            spa.switchScreenB(ipAddressFormPanel,tabletConnectionFinalPanel,root);
         }
     }
 
     private void onOK() {
 
 
-        if (swipePanelsAnimation.getActivePanel() instanceof IpAddressFormPanel) {
-            try {
-                swipePanelsAnimation.LeftSwipe();
-                if (checkIPAddressIfItIsReachable(ipAddressFormPanel.getIpAddress())) {
-                    tabletConnectionFinalPanel.SearchingTargetDeviceFinished(true);
-                    ProjectConstants.init().setTabletIpAddress(ipAddressFormPanel.getIpAddress());
-                    shareSessionIdWithTablet();
-
-
-                } else {
-                    tabletConnectionFinalPanel.SearchingTargetDeviceFinished(false);
-                    wrongIPAddress();
-
-                }
-            } catch (UnknownHostException unknownException) {
-                wrongIPAddress();
-                unknownException.printStackTrace();
-            } catch (IOException ioException) {
-                ioException.printStackTrace();
-            }
-        } else if (swipePanelsAnimation.getActivePanel() instanceof TabletConnectionFinalPanel) {
-            dispose();
-        }
+//        if (swipePanelsAnimation.getActivePanel() instanceof IpAddressFormPanel) {
+//            try {
+//                swipePanelsAnimation.LeftSwipe();
+//                if (checkIPAddressIfItIsReachable(ipAddressFormPanel.getIpAddress())) {
+//                    tabletConnectionFinalPanel.SearchingTargetDeviceFinished(true);
+//                    ProjectConstants.init().setTabletIpAddress(ipAddressFormPanel.getIpAddress());
+//                    shareSessionIdWithTablet();
+//
+//
+//                } else {
+//                    tabletConnectionFinalPanel.SearchingTargetDeviceFinished(false);
+//                    wrongIPAddress();
+//
+//                }
+//            } catch (UnknownHostException unknownException) {
+//                wrongIPAddress();
+//                unknownException.printStackTrace();
+//            } catch (IOException ioException) {
+//                ioException.printStackTrace();
+//            }
+//        } else if (swipePanelsAnimation.getActivePanel() instanceof TabletConnectionFinalPanel) {
+//            dispose();
+//        }
 
     }
 
     private void onCancel() {
-        if (swipePanelsAnimation.getActivePanel() instanceof IpAddressFormPanel) {
-            dispose();
-        } else if (swipePanelsAnimation.getActivePanel() instanceof TabletConnectionFinalPanel) {
-            swipePanelsAnimation.RightSwipe();
-        }
+//        if (swipePanelsAnimation.getActivePanel() instanceof IpAddressFormPanel) {
+//            dispose();
+//        } else if (swipePanelsAnimation.getActivePanel() instanceof TabletConnectionFinalPanel) {
+//            swipePanelsAnimation.RightSwipe();
+//        }
 
     }
 
@@ -197,7 +165,6 @@ public class TabletConnectionCreatorDialog extends JDialog {
                 tabletConnectionFinalPanel.SessionInitiationFinished(false);
             }
         });
-
 
 
     }
@@ -297,54 +264,91 @@ public class TabletConnectionCreatorDialog extends JDialog {
     }
 
 
-    public static void main(String[] args) {
-        TabletConnectionCreatorDialog dialog = new TabletConnectionCreatorDialog();
-        dialog.pack();
-        dialog.setVisible(true);
-        System.exit(0);
-    }
+//    public static void main(String[] args) {
+//        TabletConnectionCreatorDialog dialog = new TabletConnectionCreatorDialog();
+//        dialog.pack();
+//        dialog.setVisible(true);
+//        System.exit(0);
+//    }
 
-    {
-// GUI initializer generated by IntelliJ IDEA GUI Designer
-// >>> IMPORTANT!! <<<
-// DO NOT EDIT OR ADD ANY CODE HERE!
-        $$$setupUI$$$();
-    }
+    private void buildButtons(){
+        postiveButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                if(spa.getActivePane() instanceof TabletConnectionFinalPanel)
+                {
+                    mainEntrance.addToStack(false, self);
+                }
+                else {
+                    postiveButton.setText("Finish");
+                    spa.switchScreenF(tabletConnectionFinalPanel, ipAddressFormPanel, root);
 
-    /**
-     * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
-     */
-    private void $$$setupUI$$$() {
-        contentPane = new JPanel();
-        contentPane.setLayout(new GridLayoutManager(2, 1, new Insets(10, 10, 10, 10), -1, -1));
-        contentPane.setMinimumSize(new Dimension(980, 600));
-        final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-        contentPane.add(panel1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
-        final Spacer spacer1 = new Spacer();
-        panel1.add(spacer1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-        panel1.add(panel2, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        buttonNegative = new JButton();
-        buttonNegative.setText("Back");
-        panel2.add(buttonNegative, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        buttonPositive = new JButton();
-        buttonPositive.setText("Next");
-        panel2.add(buttonPositive, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        mainPanel = new JPanel();
-        mainPanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        contentPane.add(mainPanel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-    }
+                }
+            }
+        });
 
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$() {
-        return contentPane;
+
+
+        negativeButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                if(spa.getActivePane() instanceof IpAddressFormPanel){
+                    mainEntrance.addToStack(false, self);
+                }
+                else if(spa.getActivePane() instanceof TabletConnectionFinalPanel){
+                    postiveButton.setText("Next");
+                    spa.switchScreenB(ipAddressFormPanel, tabletConnectionFinalPanel, root);
+                }
+            }
+        });
+
+
+        closeButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                mainEntrance.addToStack(false, self);
+            }
+        });
+    }
+    private void initUI() {
+
+        postiveButton = new Button("Next");
+        negativeButton = new Button("Back");
+        closeButton = new Button();
+
+
+        buttonBar = new ButtonBar();
+        buttonBar.getButtons().addAll(postiveButton, negativeButton);
+        buttonBar.setPadding(new javafx.geometry.Insets(10));
+        HBox buttonBox = new HBox();
+        buttonBox.getChildren().add(buttonBar);
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        buttonBox.setPrefHeight(Double.MIN_VALUE);
+        setBottom(buttonBox);
+
+        ImageView closeX = new javafx.scene.image.ImageView(new javafx.scene.image.Image("/icons/small/close_x.png"));
+        closeX.setFitWidth(15);
+        closeX.setPreserveRatio(true);
+        closeButton.setGraphic(closeX);
+        HBox closeBox = new HBox(closeButton);
+        closeBox.setPadding(new javafx.geometry.Insets(5, 5, 0, 0));
+        closeBox.setAlignment(Pos.CENTER_RIGHT);
+        BorderPane borderPane = new BorderPane();
+        borderPane.setRight(closeBox);
+        setTop(borderPane);
+
+        ipAddressFormPanel = new IpAddressFormPanel();
+        tabletConnectionFinalPanel = new TabletConnectionFinalPanel();
+
+        root = new StackPane();
+        root.getChildren().add(ipAddressFormPanel);
+        setCenter(root);
+
+        ArrayList<Pane> panes = new ArrayList<>();
+        panes.add(ipAddressFormPanel);
+        panes.add(tabletConnectionFinalPanel);
+        spa = new SwipePanelsAnimation(buttonBar);
+
+        buildButtons();
     }
 }

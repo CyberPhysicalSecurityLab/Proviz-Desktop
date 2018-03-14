@@ -1,3 +1,6 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 import proviz.MainEntrance;
 import proviz.ProjectConstants;
 import freemarker.template.Configuration;
@@ -18,65 +21,54 @@ import java.util.Locale;
 /**
  * Created by Burak on 8/31/16.
  */
-public class MainClass {
+public class MainClass extends Application {
+    static long startingTime;
+    @Override
+    public void start(Stage primaryStage) throws Exception{
+        ProjectConstants.templateConfiguration =  startTemplateEngine(ProjectConstants.templateConfiguration);
+
+        MainEntrance mainEntrance = new MainEntrance(primaryStage);
+        //DeviceSelectionBox dvs = new DeviceSelectionBox();
+
+        primaryStage.setTitle("Proviz+");
+        primaryStage.setScene(new Scene(mainEntrance, 1024, 600));
+        primaryStage.show();
+        System.out.println("Main Screen Loadin Time "+(System.currentTimeMillis()-startingTime));
+
+    }
+
+
+
 
     public static void main (String[] args) {
 
 
-        ProjectConstants.templateConfiguration =  startTemplateEngine(ProjectConstants.templateConfiguration);
-
-        UIManager.put("Label.font", new Font(Font.SANS_SERIF, 0, 12));
+        startingTime = System.currentTimeMillis();
 
 
         ProjectConstants.init().setFolderSeperator("/");
 
         try {
             ProjectConstants.init().setServerIpAddress(InetAddress.getLocalHost().getHostAddress());
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
-
-        JFrame window = new JFrame("");
-        Toolkit CurrentToolkit = Toolkit.getDefaultToolkit();
-        try {
-            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-        }catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        Dimension screenSize = CurrentToolkit.getScreenSize();
-        window.setSize(screenSize.width,screenSize.height);
-        window.setResizable(true);
-        window.setLocationRelativeTo(null);
-
-
-
-        MainEntrance mainPanel = new MainEntrance(window);
-        window.setBounds(0,0,(int)screenSize.getWidth(),(int)screenSize.getHeight());
-
-        window.add(mainPanel.getMainPanel());
-
-        window.pack();
-
-
-        window.setVisible(true);
-
-        try {
             ProjectConstants.init().setIpAddress(InetAddress.getLocalHost().getHostAddress());
             FileOperations.init().initializeProvizFolder();
             FileOperations.init().getFiles();
-
-
-        } catch (IOException e) {
+        } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+
+        launch(args);
+
+
+
+
+
     }
 
 

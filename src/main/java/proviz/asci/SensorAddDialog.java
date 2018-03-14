@@ -1,228 +1,196 @@
 package proviz.asci;
 
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
-import com.intellij.uiDesigner.core.Spacer;
+/**
+ * Created by Burak on 8/16/17.
+ */
+
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
 import proviz.DeviceProgrammingScreen;
+import proviz.MainEntrance;
 import proviz.codegeneration.CodeGenerationTemplate;
 import proviz.library.utilities.SwipePanelsAnimation;
+import proviz.models.codegeneration.Variable;
 import proviz.models.devices.Sensor;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
 import java.util.ArrayList;
+public class SensorAddDialog extends BorderPane {
 
-public class SensorAddDialog extends JDialog {
-    private JPanel contentPane;
-    private JButton buttonFinish;
-    private JButton buttonCancel;
+    private Button next, back;
+    private ButtonBar buttonBar;
+    private StackPane center;
+    private boolean isLast;
+    private Pane previousPage, currentPage;
+    private SensorSelectionDialogPanel sensorSelectionDialogPanel;
+    private PinSelectionForSensorPanel pinSelectionForSensorPanel;
+    private FinalStageSensorAddPanel finalStageSensorAddPanel;
+    private SwipePanelsAnimation spa;
+    private Stage stage;
+    private DeviceProgrammingScreen deviceProgrammingScreen;
+    private Pane self;
+    private MainEntrance mainEntrance;
+    private Sensor sensorCandidate;
     private CodeGenerationTemplate codeGenerationTemplate;
 
-    private FinalStageSensorAddPanel finalStageSensorAddPanel;
-    private PinSelectionForSensorPanel pinSelectionForSensorPanel;
-    private SensorSelectionDialogPanel sensorSelectionDialogPanel;
-    public JPanel mainPanel;
-    public JButton backBttn;
-    public JButton nextbttn;
-    private Sensor selectedSensor;
-    private SwipePanelsAnimation swipePanelsAnimation;
-    private int activePanelIndex = 0;
+    private Button closeButton;
 
-    private DeviceProgrammingScreen deviceProgrammingScreen;
+    private ArrayList<String> allSensors; //make this of type Sensor
+
+    public SensorAddDialog(MainEntrance mainEntrance,Stage stage, DeviceProgrammingScreen dps){
+        this.mainEntrance = mainEntrance;
+        deviceProgrammingScreen = dps;
+        this.codeGenerationTemplate = dps.getCodeGenerationTemplate();
+
+        this.stage = stage;
+        self = this;
+        initUI();
+        buildButtonEvents();
 
 
-    public SensorAddDialog(DeviceProgrammingScreen deviceProgrammingScreen, CodeGenerationTemplate codeGenerationTemplate) {
-        setContentPane(contentPane);
-        this.deviceProgrammingScreen = deviceProgrammingScreen;
-        this.codeGenerationTemplate = codeGenerationTemplate;
-        setModal(true);
-        getRootPane().setDefaultButton(buttonFinish);
-        initializePanels();
-        activePanelIndex = 0;
-        makeButtonUIOperation(0);
-        buttonFinish.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onOK();
-            }
-        });
+    }
 
-        buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        });
+    private void initUI(){
+        this.setMaxSize(945, 550);
 
-        backBttn.addActionListener(new ActionListener() {
+        next = new Button();
+        back = new Button();
+        back.setText("Back");
+        next.setText("Next");
+        buttonBar = new ButtonBar();
+        buttonBar.getButtons().addAll(back, next);
+        buttonBar.setPadding(new Insets(10, 10, 10, 10));
+        HBox bottom = new HBox();
+        bottom.getChildren().add(buttonBar);
+        bottom.setAlignment(Pos.CENTER_RIGHT);
+        this.setBottom(bottom);
+
+        closeButton = new Button();
+        ImageView closeX = new ImageView(new Image("/icons/small/close_x.png"));
+        closeX.setFitWidth(15);
+        closeX.setPreserveRatio(true);
+        closeButton.setGraphic(closeX);
+        HBox closeBox = new HBox(closeButton);
+        closeBox.setPadding(new Insets(5));
+        closeBox.setAlignment(Pos.CENTER_RIGHT);
+        setTop(closeBox);
+
+        center = new StackPane();
+        sensorSelectionDialogPanel =
+                new SensorSelectionDialogPanel();
+        center.getChildren().add(sensorSelectionDialogPanel);
+        currentPage = sensorSelectionDialogPanel;
+        this.setCenter(center);
+
+        pinSelectionForSensorPanel =
+                new PinSelectionForSensorPanel(codeGenerationTemplate);
+        finalStageSensorAddPanel =
+                new FinalStageSensorAddPanel();
+
+        spa = new SwipePanelsAnimation(buttonBar);
+
+        allSensors = new ArrayList<>();
+    }
+
+    private void buildButtonEvents(){
+
+        closeButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                onBack();
+            public void handle(ActionEvent event) {
+                mainEntrance.addToStack(false, self);
+                mainEntrance.addToStack(true, deviceProgrammingScreen);
             }
         });
 
-        nextbttn.addActionListener(new ActionListener() {
+        next.setOnAction(new EventHandler<ActionEvent>() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                onNext();
+            public void handle(ActionEvent event) {
+                if(currentPage == sensorSelectionDialogPanel){
+                    spa.switchScreenF(pinSelectionForSensorPanel, sensorSelectionDialogPanel, center);
+
+                    currentPage = pinSelectionForSensorPanel;
+                    previousPage = sensorSelectionDialogPanel;
+                    sensorCandidate = sensorSelectionDialogPanel.getCurrentSelection();
+
+                    pinSelectionForSensorPanel.setSelectedSensor(sensorCandidate);
+
+
+
+
+                }
+                else if(currentPage == pinSelectionForSensorPanel){
+                    spa.switchScreenF(finalStageSensorAddPanel, pinSelectionForSensorPanel, center);
+
+                    currentPage = finalStageSensorAddPanel;
+                    previousPage = pinSelectionForSensorPanel;
+
+                    next.setText("Finish");
+
+
+                }
+
+                else if(currentPage == finalStageSensorAddPanel)
+                {
+                    allSensors.add(finalStageSensorAddPanel.getSensorSelection());
+                    sensorCandidate.setParentBoard(codeGenerationTemplate.getBoard());
+                    deviceProgrammingScreen.addSensorToScreen(sensorCandidate);
+//                    Sensor sensor = new Sensor();
+//                    sensor.setName("Burak");
+//                    ArrayList<Variable> variables = new ArrayList<>();
+//                    Variable variable = new Variable();
+//                    variable.setPreferredName("Melih");
+//                    variable.setCommunicationVariable(true);
+//                    variables.add(variable);
+//                    sensor.setVariables(variables);
+//                    deviceProgrammingScreen.addSensorToScreen(sensor);
+                    mainEntrance.addToStack(false, self);
+                    mainEntrance.addToStack(true, deviceProgrammingScreen);
+                    //stage.close();
+                }
+
             }
         });
 
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });
-
-        contentPane.registerKeyboardAction(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-
-    }
-
-    private void onOK() {
-        selectedSensor.setParentBoard(codeGenerationTemplate.getBoard());
-        deviceProgrammingScreen.addSensor(selectedSensor, false);
-
-        dispose();
-    }
-
-    private void onCancel() {
-        dispose();
-    }
-
-    private void onBack() {
-
-        swipePanelsAnimation.RightSwipe();
-        if (activePanelIndex > 0)
-            activePanelIndex--;
-        makeButtonUIOperation(activePanelIndex);
-
-    }
-
-    private void onNext() {
-
-        swipePanelsAnimation.LeftSwipe();
-        if (activePanelIndex != 2)
-            activePanelIndex++;
-        if (activePanelIndex == 1) {
-            selectedSensor = sensorSelectionDialogPanel.getCurrentSelection();
-            pinSelectionForSensorPanel.setSelectedSensor(sensorSelectionDialogPanel.getCurrentSelection());
-        } else if (activePanelIndex == 2) {
-            pinSelectionForSensorPanel.makeChangesOnSelectedSensor();
-            finalStageSensorAddPanel.setSensor(selectedSensor);
-
-        }
-        makeButtonUIOperation(activePanelIndex);
-
-    }
-
-    private void makeButtonUIOperation(int activePanelIndex) {
-        if (activePanelIndex == 0) {
-            backBttn.setVisible(false);
-            buttonFinish.setVisible(false);
-            nextbttn.setVisible(true);
-            buttonCancel.setVisible(true);
-        } else if (activePanelIndex == (2)) {
-            backBttn.setVisible(true);
-            buttonFinish.setVisible(true);
-            nextbttn.setVisible(false);
-            buttonCancel.setVisible(false);
-        } else {
-            backBttn.setVisible(true);
-            buttonFinish.setVisible(false);
-            nextbttn.setVisible(true);
-            buttonCancel.setVisible(false);
-        }
-    }
-
-    private void initializePanels() {
-        finalStageSensorAddPanel = new FinalStageSensorAddPanel();
-        pinSelectionForSensorPanel = new PinSelectionForSensorPanel(codeGenerationTemplate);
-        sensorSelectionDialogPanel = new SensorSelectionDialogPanel();
-
-        Dimension dimension = new Dimension(860, 560);
-        mainPanel.setPreferredSize(dimension);
-        mainPanel.setMaximumSize(dimension);
-        mainPanel.setMinimumSize(dimension);
-        //mainPanel.setBackground(Color.blue);
-
-        ArrayList<JPanel> panels = new ArrayList<>();
-        panels.add(sensorSelectionDialogPanel);
-        panels.add(pinSelectionForSensorPanel);
-        panels.add(finalStageSensorAddPanel);
-        // mainPanel.add(sensorSelectionDialogPanel, BorderLayout.CENTER);
-        final Thread t0 = new Thread(new Runnable() {
+        back.setOnAction(new EventHandler<ActionEvent>() {
             @Override
-            public void run() {
-                swipePanelsAnimation = new SwipePanelsAnimation(mainPanel, panels);
+            public void handle(ActionEvent event) {
+                if(currentPage == sensorSelectionDialogPanel){
+                    mainEntrance.addToStack(false, self);
+                    mainEntrance.addToStack(true, deviceProgrammingScreen);
+                }
+                else if(currentPage == pinSelectionForSensorPanel){
+                    spa.switchScreenB(sensorSelectionDialogPanel, pinSelectionForSensorPanel, center);
+
+                    currentPage = sensorSelectionDialogPanel;
+                    previousPage = pinSelectionForSensorPanel;
+                }
+                else if(currentPage == finalStageSensorAddPanel){
+                    spa.switchScreenB(pinSelectionForSensorPanel, finalStageSensorAddPanel, center);
+
+                    next.setText("Next");
+
+                    currentPage = pinSelectionForSensorPanel;
+                    previousPage = finalStageSensorAddPanel;
+                }
             }
         });
-        t0.setDaemon(true);
-        t0.start();
 
 
     }
 
-
-
-
-    public int getActivePanelIndex() {
-        return activePanelIndex;
-    }
-
-    public void setActivePanelIndex(int activePanelIndex) {
-        this.activePanelIndex = activePanelIndex;
-    }
-
-    {
-// GUI initializer generated by IntelliJ IDEA GUI Designer
-// >>> IMPORTANT!! <<<
-// DO NOT EDIT OR ADD ANY CODE HERE!
-        $$$setupUI$$$();
-    }
-
-    /**
-     * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
-     */
-    private void $$$setupUI$$$() {
-        contentPane = new JPanel();
-        contentPane.setLayout(new GridLayoutManager(2, 1, new Insets(10, 10, 10, 10), -1, -1));
-        final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-        contentPane.add(panel1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, 1, null, null, null, 0, false));
-        final Spacer spacer1 = new Spacer();
-        panel1.add(spacer1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(1, 4, new Insets(0, 0, 0, 0), -1, -1));
-        panel1.add(panel2, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        buttonFinish = new JButton();
-        buttonFinish.setText("Finish");
-        panel2.add(buttonFinish, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        nextbttn = new JButton();
-        nextbttn.setText("Next");
-        panel2.add(nextbttn, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        backBttn = new JButton();
-        backBttn.setText("Back");
-        panel2.add(backBttn, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        buttonCancel = new JButton();
-        buttonCancel.setText("Cancel");
-        panel2.add(buttonCancel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        mainPanel = new JPanel();
-        mainPanel.setLayout(new GridBagLayout());
-        contentPane.add(mainPanel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-    }
-
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$() {
-        return contentPane;
+    public ArrayList<String> getAllSensors() {
+        return allSensors;
     }
 }
+

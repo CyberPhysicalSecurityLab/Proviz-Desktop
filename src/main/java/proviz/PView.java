@@ -1,215 +1,143 @@
 package proviz;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.event.EventHandler;
+import javafx.scene.Node;
+import javafx.scene.control.*;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.image.*;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import proviz.BoardView;
+import proviz.DeviceLink;
+import proviz.DottedBox;
 import proviz.models.devices.Board;
-import com.sun.org.apache.bcel.internal.util.ClassLoader;
-import javafx.scene.shape.Line;
-import proviz.models.uielements.LineModel;
 
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
-import java.awt.dnd.DropTargetListener;
-import java.awt.event.*;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.ArrayList;
 
 /**
- * Created by Burak on 9/5/16.
- */ public class PView extends JLayeredPane implements DropTargetListener, MouseListener,ActionListener,ComponentListener {
+ * Created by Fran Callejas on 6/26/2017.
+ */
+public class PView extends Pane {
 
-    private DottedJPanel canvas;
+    private DottedBox dottedBox;
+    private ArrayList<BoardView> allDevices;
+    private ImageView computerView;
+    private VBox computerBox;
     private BoardView selectedBoardView;
-    private ArrayList<BoardView> boardViews;
-    private boolean isFirstTime;
-    private BoardView computerView;
-    private ConnectionLinesComponent connectionLinesComponent;
     private MainEntrance mainEntrance;
 
 
-    public MainEntrance getParentView()
-    {
-        return mainEntrance;
+    public PView(MainEntrance mainEntrance){
+        this.mainEntrance = mainEntrance; initUI();
     }
 
-    public PView(MainEntrance mainEntrance)
-    {
-        this.setMainEntrance(mainEntrance);
-        addMouseListener(this);
-        isFirstTime = true;
-        boardViews = new ArrayList<>();
-        canvas = new DottedJPanel();
-        canvas.setLayout(null);
-        canvas.setSize(getWidth(),getHeight());
-        canvas.setOpaque(true);
-        this.setBorder(BorderFactory.createTitledBorder("Topology"));
-        this.setOpaque(true);
-        addComponentListener(this);
-        this.add(canvas,new Integer(1));
-        setLayout(null);
-        connectionLinesComponent = new ConnectionLinesComponent();
+    private void initUI(){
+        dottedBox = new DottedBox();
+
+        Image computer = new javafx.scene.image.Image
+                (this.getClass().getResourceAsStream("/notebook.png"));
+        Label computerLabel = new javafx.scene.control.Label("Computer");
 
 
-    }
-
-    public void bindLine2Computer(BoardView boardView)
-    {
-        LineModel lineModel = new LineModel(boardView,computerView,3);
-        boardView.setLineModel(lineModel);
-
-        connectionLinesComponent.addLine(lineModel);
-
-    }
-    public void insertSensorViewList(BoardView component)
-    {
-        this.boardViews.add(component);
-    }
+        computerLabel.setMinWidth(100);
+        computerView = new ImageView(computer);
+        computerBox = new VBox();
+        computerBox.setTranslateX(440);
+        computerBox.setTranslateY(225);
+        computerBox.getChildren().addAll(computerView, computerLabel);
+        computerBox.setMaxWidth(computerLabel.getWidth());
+        computerBox.setMaxHeight(computerView.getFitHeight() + 60);
 
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-
-    }
-
-    @Override
-    public void drop(DropTargetDropEvent dtde) {
+        allDevices = new ArrayList<>();
 
 
-    }
+        getChildren().addAll(dottedBox, computerBox);
 
-    @Override
-    public void dragEnter(DropTargetDragEvent dtde) {
+        this.setOnMousePressed(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                if(event.getSource() instanceof BoardView){
 
-    }
+                    /*if (((BoardView) event.getSource()).getIsClicked()) {
+                        ((BoardView) event.getSource()).buildBorder(false);
+                        System.out.println("PView take off border");
+                    }
+                    else{
+                        setSelectedBoardView((BoardView) event.getSource());
+                        System.out.println("PView put border");
 
-    @Override
-    public void dragExit(DropTargetEvent dte) {
+                    }*/
 
-    }
+                    setSelectedBoardView((BoardView) event.getSource());
 
-    @Override
-    public void dropActionChanged(DropTargetDragEvent dtde) {
-
-    }
-
-    @Override
-    public void dragOver(DropTargetDragEvent dtde) {
-
-    }
-
-
-    @Override
-    public void componentResized(ComponentEvent e) {
-        System.out.print(true);
-        canvas.setSize(new Dimension(e.getComponent().getWidth(),e.getComponent().getHeight()));
-        canvas.repaint(50L);
-        connectionLinesComponent.setSize(new Dimension(getWidth(),getHeight()));
-        if(isFirstTime && e.getComponent().getWidth()>0 && e.getComponent().getHeight()>0) {
-
-            add(connectionLinesComponent,new Integer(2));
-            BoardView computer = new BoardView(this, ProjectConstants.DEVICE_TYPE.Server);
-            computer.setDeviceName("Computer");
-            BufferedImage computerImage = null;
-            try {
-                computerImage = ImageIO.read(ClassLoader.getSystemResource("notebook.png"));
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-            computer.setSize(96, 96);
-            computer.setLocation(((getWidth() / 2) - computerImage.getWidth() / 2), ((getHeight() / 2) - computerImage.getHeight() / 2));
-            this.add(computer, new Integer(3));
-            computerView = computer;
-            repaint(50L);
-            isFirstTime = false;
-        }
-    }
-
-
-
-    @Override
-    public void componentMoved(ComponentEvent e) {
-
-    }
-
-    @Override
-    public void componentShown(ComponentEvent e) {
-
-    }
-
-    @Override
-    public void componentHidden(ComponentEvent e) {
-
-    }
-
-    public BoardView getSelectedBoardView() {
-        return selectedBoardView;
-    }
-
-    public void setSelectedBoardView(BoardView selectedBoardView) {
-        this.selectedBoardView = selectedBoardView;
-        for(BoardView boardView : boardViews)
-        {
-            if(selectedBoardView == boardView)
-                continue;
-            else {
-                if(boardView.isSelected() == true)
-                {
-                    boardView.setSelected(false);
-                    boardView.repaint(50L);
                 }
-
+                else{
+                    for(BoardView bV : allDevices){
+                        bV.buildBorder(false);
+                    }
+                    mainEntrance.hideRightSideBar();
+                }
             }
+        });
 
+
+    }
+
+    public void setSelectedBoardView(BoardView boardView){
+        selectedBoardView = boardView;
+        for(BoardView bV : allDevices) {
+            if (bV != selectedBoardView) {
+                bV.buildBorder(false);
+            } else if (bV == selectedBoardView) {
+                bV.buildBorder(true);
+                bV.setIsClicked(true);
+            }
         }
     }
 
-    public BoardView getComputerView() {
-        return computerView;
-    }
 
-    public ConnectionLinesComponent getConnectionLinesComponent() {
-        return connectionLinesComponent;
-    }
+    public void createBoardView(Board board){
 
-    public void setConnectionLinesComponent(ConnectionLinesComponent connectionLinesComponent) {
-        this.connectionLinesComponent = connectionLinesComponent;
-    }
+        BoardView boardView = new BoardView(mainEntrance,board);
 
 
+        DeviceLink deviceLink = new DeviceLink();
+        deviceLink.bindEnds(computerBox, boardView);
+        deviceLink.setId(String.valueOf(deviceLink.getLinkID()));
+        System.out.println(String.valueOf(deviceLink.getLinkID()));
+        boardView.registerLinkID(deviceLink.getLinkID());
 
-    public MainEntrance getMainEntrance() {
-        return mainEntrance;
-    }
+        getChildren().add(0, deviceLink);
+        getChildren().add(boardView);
 
-    public void setMainEntrance(MainEntrance mainEntrance) {
-        this.mainEntrance = mainEntrance;
-    }
+        boardView.setTranslateX(board.getX());
+        boardView.setTranslateY(board.getY());
+        boardView.toFront();
 
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        mainEntrance.hideRightSideBar();
-    }
+        allDevices.add(boardView);
+        System.out.println(allDevices.size());
 
-    @Override
-    public void mousePressed(MouseEvent e) {
+        computerBox.toFront();
 
     }
 
-    @Override
-    public void mouseReleased(MouseEvent e) {
 
+
+    public void setComputerViewEffect(boolean t){
+        if(t == true){
+            computerView.setEffect(new DropShadow());
+        }
+        else if(t == false){
+            computerView.setEffect(null);
+        }
     }
 
-    @Override
-    public void mouseEntered(MouseEvent e) {
 
+    public ArrayList<BoardView> getAllDevices() {
+        return allDevices;
     }
 
-    @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
 }

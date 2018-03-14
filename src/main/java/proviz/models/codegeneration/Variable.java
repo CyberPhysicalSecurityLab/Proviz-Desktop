@@ -25,6 +25,11 @@ public class Variable {
     {
     }
 
+    @Override
+    public String toString() {
+        return preferredName.toString();
+    }
+
     public boolean isCommunicationVariable() {
         return communicationVariable;
     }

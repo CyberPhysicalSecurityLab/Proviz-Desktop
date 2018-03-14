@@ -1,455 +1,573 @@
 package proviz;
 
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
-import freemarker.template.TemplateException;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
+import com.sun.javafx.scene.control.skin.LabeledText;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.geometry.Side;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+import org.fxmisc.richtext.CodeArea;
+import org.fxmisc.richtext.LineNumberFactory;
+import org.fxmisc.richtext.StyleSpans;
+import org.fxmisc.richtext.StyleSpansBuilder;
 import proviz.asci.SensorAddDialog;
 import proviz.codedistribution.CodeDistributionManager;
-import proviz.codegeneration.CodeGeneration;
 import proviz.codegeneration.CodeGenerationTemplate;
 import proviz.codeprogramming.CodeProgrammingManager;
 import proviz.devicedatalibrary.DataManager;
-import proviz.library.utilities.FloatShowHideAnimation;
-import proviz.models.Bound;
 import proviz.models.codegeneration.Variable;
+import proviz.models.devices.Board;
 import proviz.models.devices.Sensor;
-import proviz.thirdpartyconnections.tablet.TabletConnectionCreatorDialog;
-import proviz.uicomponents.BoardDetailView;
 import proviz.uicomponents.SensorAddDetailView;
-import proviz.uicomponents.rightsidebar.SensorListView;
-import proviz.uicomponents.rightsidebar.SideBarMenu;
-import proviz.uicomponents.rightsidebar.SideBarMenuSection;
+import proviz.uicomponents.rightsidebar.BoardDetailView;
 
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeNode;
-import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static java.awt.SystemColor.text;
 
-/**
- * Created by Burak on 1/15/17.
- */
-public class DeviceProgrammingScreen implements MouseListener {
-    public JButton openFileBttn;
-    public JButton saveBttn;
-    public JButton addSensorBttn;
-    public JButton compileBttn;
-    public JTabbedPane tabbedPane1;
-    public JPanel visualProgrammingPanel;
-    public JPanel codeProgrammingPanel;
-    public JLabel flashStatusLabel;
-    public JLabel connectionTypeStatus;
-    public JPanel visualRightSideBar;
-    public JPanel visualSensorPanel;
-    public JPanel contentPanel;
-    private CodeDistributionManager codeDistributionManager;
+public class DeviceProgrammingScreen extends BorderPane {
 
-    private RSyntaxTextArea codeTextArea;
-
-    private SensorListView sensorListView;
-    private JPanel emptySensorPanel;
-    private ArrayList<JLabel> sensorListArray;
-    private CodeGenerationTemplate codeGenerationTemplate;
-    private Box box;
-    private Sensor activeSensorForRightSideBar;
+    private Stage stage;
+    private MainEntrance mainEntrance;
+    private Button addSensorBttn, closeBttn;
+    private Button compileBttn;
+    private TabPane tabbedPane1;
+    private Tab visualProgrammingPanel;
+    private Tab codeProgrammingPanel;
+    private HBox labelBox;
+    private Label flashStatusLabel;
+    private Label connectionTypeStatus;
+    private Pane visualSensorPane;
+    private TreeView tree;
+    private ToolBar toolBar;
+    private Pane self;
+    private SensorAddDialog sensorAddDialog;
+    private boolean isOpen;
+    private CodeArea codeArea;
     private SensorAddDetailView sensorAddDetailView;
-    private ArrayList<Sensor> sensors;
-    private FloatShowHideAnimation floatShowHideAnimation;
+    private BoardDetailView boardDetailView;
+
+    private Accordion accordion1;
+    private Accordion accordion2;
+    private VBox accordionBox;
 
     private CodeProgrammingManager codeProgrammingManager;
+    private CodeDistributionManager codeDistributionManager;
 
-    private JTree tree;
+    private TreeItem<Object> rootEntry;
+    private CodeGenerationTemplate codeGenerationTemplate;
 
-    public DeviceProgrammingScreen(CodeGenerationTemplate codeGenerationTemplate) {
+    private boolean isRootClicked;
+
+    private  final String[] KEYWORDS = new String[] {
+            "abstract", "assert", "boolean", "break", "byte",
+            "case", "catch", "char", "class", "const",
+            "continue", "default", "do", "double", "else",
+            "enum", "extends", "final", "finally", "float",
+            "for", "goto", "if", "implements", "import",
+            "instanceof", "int", "interface", "long", "native",
+            "new", "package", "private", "protected", "public",
+            "return", "short", "static", "strictfp", "super",
+            "switch", "synchronized", "this", "throw", "throws",
+            "transient", "try", "void", "volatile", "while"
+    };
+
+    private  final String KEYWORD_PATTERN = "\\b(" + String.join("|", KEYWORDS) + ")\\b";
+    private  final String PAREN_PATTERN = "\\(|\\)";
+    private  final String BRACE_PATTERN = "\\{|\\}";
+    private  final String BRACKET_PATTERN = "\\[|\\]";
+    private  final String SEMICOLON_PATTERN = "\\;";
+    private  final String STRING_PATTERN = "\"([^\"\\\\]|\\\\.)*\"";
+    private  final String COMMENT_PATTERN = "//[^\n]*" + "|" + "/\\*(.|\\R)*?\\*/";
+
+    private  final Pattern PATTERN = Pattern.compile(
+            "(?<KEYWORD>" + KEYWORD_PATTERN + ")"
+                    + "|(?<PAREN>" + PAREN_PATTERN + ")"
+                    + "|(?<BRACE>" + BRACE_PATTERN + ")"
+                    + "|(?<BRACKET>" + BRACKET_PATTERN + ")"
+                    + "|(?<SEMICOLON>" + SEMICOLON_PATTERN + ")"
+                    + "|(?<STRING>" + STRING_PATTERN + ")"
+                    + "|(?<COMMENT>" + COMMENT_PATTERN + ")"
+    );
+
+    public CodeGenerationTemplate getCodeGenerationTemplate() {
+        return codeGenerationTemplate;
+    }
+
+    public void setCodeGenerationTemplate(CodeGenerationTemplate codeGenerationTemplate) {
         this.codeGenerationTemplate = codeGenerationTemplate;
-        sensorListArray = new ArrayList<>();
-        activeSensorForRightSideBar = null;
-        initializeUIComponents();
     }
 
 
-    private void initializeUIComponents() {
-        addSensorBttn.addMouseListener(this);
-        visualSensorPanel.setLayout(new BoxLayout(visualSensorPanel, BoxLayout.Y_AXIS));
-        emptySensorPanel = new JPanel();
-        emptySensorPanel.setLayout(new BorderLayout());
-        emptySensorPanel.setVisible(false);
-        JLabel emptyLabel = new JLabel("No Sensor Found");
-        visualSensorPanel.addMouseListener(this);
-        emptyLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        emptySensorPanel.add(emptyLabel, BorderLayout.CENTER);
-        GridConstraints gridConstraints = new GridConstraints();
-        gridConstraints.setFill(GridConstraints.FILL_BOTH);
-        visualSensorPanel.add(emptySensorPanel, gridConstraints);
-        GridConstraints gridConstraints1 = new GridConstraints();
-        gridConstraints1.setFill(GridConstraints.ALIGN_LEFT);
-        box = Box.createVerticalBox();
-        visualSensorPanel.add(box, gridConstraints);
+    public DeviceProgrammingScreen(MainEntrance mainEntrance, CodeGenerationTemplate codeGenerationTemplate){
+        self = this;
+        this.stage = mainEntrance.getStage();
+this.mainEntrance = mainEntrance;
+        this.codeGenerationTemplate = codeGenerationTemplate;
 
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(codeGenerationTemplate.getBoard().getUserFriendlyName());
-        tree = new JTree(rootNode);
-        tree.setAlignmentX(tree.LEFT_ALIGNMENT);
-        Dimension dimension = new Dimension(visualSensorPanel.getWidth(), 100);
-        tree.setMinimumSize(dimension);
-        tree.setRootVisible(false);
-        tree.setVisible(false);
-        tree.setBackground(new Color(238, 238, 238));
-        DefaultTreeCellRenderer defaultTreeCellRenderer = new DefaultTreeCellRenderer() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-            }
-
-            @Override
-            public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
-
-
-                JLabel label = (JLabel) super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-
-                if (!leaf) {
-                    Font font = new Font("Courier New", 2, 20);
-                    label.setForeground(Color.BLACK);
-                    label.setFont(font);
-                    label.setOpaque(true);
-                    label.setBackground(new Color(238, 238, 238));
-                    this.setEnabled(false);
-                    label.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-                } else {
-                    Font font = new Font("Courier New", 2, 15);
-                    label.setFont(font);
-                    label.setOpaque(true);
-                    label.setForeground(Color.BLACK);
-                    label.setBackground(new Color(238, 238, 238));
-
-                    label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-                }
-
-
-                return label;
-
-            }
-        };
-        defaultTreeCellRenderer.setLeafIcon(null);
-
-
-        tree.setCellRenderer(defaultTreeCellRenderer);
-
-        tree.addTreeSelectionListener(new TreeSelectionListener() {
-            @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                DefaultMutableTreeNode mutableTreeNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-
-                if (mutableTreeNode != null) {
-
-                    if (mutableTreeNode.isLeaf()) {
-                        Bound bound = getBoundFrom(mutableTreeNode);
-                        if (bound == null)
-                            throw new NullPointerException("Bound was not be founded. Check!");
-                        showRightSideBar(bound, true);
-                    } else {
-                        showRightSideBar(false);
-                    }
-                }
-            }
-        });
-
-        box.add(tree);
-
-
-
-        compileBttn.addMouseListener(this);
-        sensors = codeGenerationTemplate.getBoard().getSensors();
-
-        if (!sensors.isEmpty()) {
-            for (Sensor sensor : sensors) {
-                sensor.setParentBoard(codeGenerationTemplate.getBoard());
-                addSensor(sensor, true);
-            }
-        } else {
-            emptySensorPanel.setVisible(true);
-        }
-
-        connectionTypeStatus.setText(codeGenerationTemplate.getConnectionType().toString());
-        SideBarMenu sideBarMenu = new SideBarMenu(SideBarMenu.SideBarMode.TOP_LEVEL, true, 160, true);
-        sensorAddDetailView = new SensorAddDetailView(codeGenerationTemplate.getBoard(), 160, 240, false);
-        SideBarMenuSection sideBarMenuSection = new SideBarMenuSection(sideBarMenu, "Sensor Detail", sensorAddDetailView, null);
-        sideBarMenu.addSection(sideBarMenuSection);
-
-        proviz.uicomponents.rightsidebar.BoardDetailView boardDetailView = new proviz.uicomponents.rightsidebar.BoardDetailView();
-        boardDetailView.changeData(codeGenerationTemplate.getBoard());
-        SideBarMenuSection boardDetailSection = new SideBarMenuSection(sideBarMenu, "Board Detail", boardDetailView, null);
-        sideBarMenu.addSection(boardDetailSection);
-        sideBarMenuSection.expand();
-        boardDetailSection.expand();
-        visualRightSideBar.setLayout(new BoxLayout(visualRightSideBar, BoxLayout.Y_AXIS));
-
-        visualRightSideBar.add(sideBarMenu);
-        visualProgrammingPanel.addAncestorListener(new AncestorListener() {
-            @Override
-            public void ancestorAdded(AncestorEvent event) {
-                floatShowHideAnimation = new FloatShowHideAnimation(visualProgrammingPanel, visualRightSideBar);
-
-            }
-
-            @Override
-            public void ancestorRemoved(AncestorEvent event) {
-
-            }
-
-            @Override
-            public void ancestorMoved(AncestorEvent event) {
-
-            }
-        });
-        hideRightSideBar();
-        initializeCodeArea();
-
+        initUI();
 
     }
 
+    private void initUI(){
+        this.setMinSize(905, 500);
+        addSensorBttn = new Button();
+        compileBttn = new Button();
+isRootClicked = false;
+codeArea = new CodeArea();
+        codeArea.setParagraphGraphicFactory(LineNumberFactory.get(codeArea));
+        codeArea.richChanges()
+                .filter(ch -> !ch.getInserted().equals(ch.getRemoved())) // XXX
+                .subscribe(change -> {
+                    codeArea.setStyleSpans(0, computeHighlighting(codeArea.getText()));
+                });
 
-    private Bound getBoundFrom(DefaultMutableTreeNode mutableTreeNode) {
-        String rootNodeValue = mutableTreeNode.getParent().toString();
+        ImageView addSensorI = new ImageView(new Image(
+                DeviceProgrammingScreen.class.getResourceAsStream("/icons/small/plus.png")));
+        addSensorI.setFitWidth(15);
+        addSensorI.setPreserveRatio(true);
+        addSensorBttn.setGraphic(addSensorI);
+        addSensorBttn.setText("Add Sensor");
 
-        String selectedValue = (String) mutableTreeNode.getUserObject();
+        ImageView compileI = new ImageView(new Image(
+                DeviceProgrammingScreen.class.getResourceAsStream("/icons/small/circled_play.png")));
+        compileI.setFitWidth(15);
+        compileI.setPreserveRatio(true);
+        compileBttn.setGraphic(compileI);
+        compileBttn.setText("Compile");
+        toolBar = new ToolBar();
+        HBox toolBox = new HBox(addSensorBttn, compileBttn);
+        toolBox.setPadding(new Insets(5));
+        toolBox.setAlignment(Pos.CENTER_LEFT);
 
-        for (Sensor sensor : DataManager.getInstance().activeSensors) {
-            if (sensor.getName().compareTo(rootNodeValue) == 0) {
-                for (Variable variable : sensor.getVariables()) {
-                    if (variable.getPreferredName().compareTo(selectedValue) == 0) {
-                        return variable.getBound();
-                    }
-                }
-            }
-        }
+        closeBttn = new Button();
+        ImageView closeX = new ImageView(new Image("/icons/small/close_x.png"));
+        closeX.setFitWidth(15);
+        closeX.setPreserveRatio(true);
+        closeBttn.setGraphic(closeX);
+        HBox closeBox = new HBox(closeBttn);
+        closeBox.setAlignment(Pos.CENTER_RIGHT);
 
-        return null;
-    }
+        BorderPane topBox = new BorderPane();
+        topBox.setLeft(toolBox);
+        topBox.setRight(closeBox);
+        this.setTop(topBox);
 
+        tabbedPane1 = new TabPane();
+        visualProgrammingPanel = new Tab();
+        visualProgrammingPanel.setClosable(false);
+        visualProgrammingPanel.setText("Visual");
+        visualSensorPane = new Pane();
+        visualProgrammingPanel.setContent(visualSensorPane);
+        codeProgrammingPanel = new Tab();
 
-    public void addSensor(Sensor sensor, boolean isOnlyViewAdd) {
-        if (emptySensorPanel.isVisible())
-            emptySensorPanel.setVisible(false);
+        codeProgrammingPanel.setClosable(false);
+        codeProgrammingPanel.setText("Code");
+        codeProgrammingPanel.setContent(codeArea);
+        tabbedPane1.getTabs().addAll(visualProgrammingPanel, codeProgrammingPanel);
+        tabbedPane1.setSide(Side.BOTTOM);
+        this.setCenter(tabbedPane1);
 
-        codeGenerationTemplate.getBoardView().getParentView().getParentView().getSensorListView().addSensor(sensor.getName());
-        DefaultMutableTreeNode sensorNode = new DefaultMutableTreeNode(sensor.getName());
-        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
+        labelBox = new HBox();
+        labelBox.setPrefHeight(30);
+        //labelBox.setMaxWidth(1024);
 
-        for (Variable variable : sensor.getVariables()) {
-
-            if (variable.isCommunicationVariable() == true) {
-
-                DefaultMutableTreeNode innerNode = new DefaultMutableTreeNode(variable.getPreferredName());
-                sensorNode.add(innerNode);
-            }
-        }
-        rootNode.add(sensorNode);
-        ((DefaultTreeModel) tree.getModel()).reload();
-        tree.setVisible(true);
-        if (isOnlyViewAdd == false)
-            codeGenerationTemplate.getBoard().getSensors().add(sensor);
-
-        DataManager.getInstance().activeSensors.add(sensor);
-    }
-
-
-    private void showRightSideBar(Bound bound, boolean isLeaf) {
-        visualRightSideBar.setVisible(true);
-        sensorAddDetailView.setViewChange(bound, isLeaf);
-        visualRightSideBar.revalidate();
-    }
-
-    private void showRightSideBar(boolean isLeaf) {
-        visualRightSideBar.setVisible(true);
-        sensorAddDetailView.setViewChange(isLeaf);
-        visualRightSideBar.revalidate();
-    }
-
-    private void hideRightSideBar() {
-        visualRightSideBar.setVisible(false);
-
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        if (e.getSource() == addSensorBttn) {
-            SensorAddDialog sensorAddDialog = new SensorAddDialog(this, codeGenerationTemplate);
-
-            sensorAddDialog.setResizable(false);
-            sensorAddDialog.pack();
-
-            sensorAddDialog.setVisible(true);
-
-        } else if (e.getSource() == compileBttn) {
-
-            if (tabbedPane1.getSelectedIndex() == 1) {
-                String code = codeTextArea.getText().replace('\n', ' ');
-
-                codeProgrammingManager = new CodeProgrammingManager(code, codeGenerationTemplate);
-                codeProgrammingManager.compile();
-            }
-
-            codeDistributionManager = new CodeDistributionManager(codeGenerationTemplate, false);
-            codeDistributionManager.flashCode2Device();
-
-
-        }
-
-
-        if (e.getSource() == visualSensorPanel) {
-            hideRightSideBar();
-        }
-
-
-
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseEntered(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
-
-    private void initializeCodeArea() {
-        codeTextArea = new RSyntaxTextArea(25, 60);
-        codeTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
-        codeTextArea.setCodeFoldingEnabled(true);
-        codeTextArea.setMarkOccurrences(true);
-        RTextScrollPane scrollPane = new RTextScrollPane(codeTextArea);
-        GridConstraints constraints = new GridConstraints();
-        constraints.setFill(GridConstraints.FILL_BOTH);
-        codeProgrammingPanel.add(scrollPane, constraints);
-    }
-
-    public void show() {
-        JFrame window = new JFrame("Device Programming Window");
-        window.setSize(1024, 768);
-        window.setContentPane(contentPanel);
-        window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        window.setResizable(true);
-        window.setVisible(true);
-    }
-
-
-    {
-// GUI initializer generated by IntelliJ IDEA GUI Designer
-// >>> IMPORTANT!! <<<
-// DO NOT EDIT OR ADD ANY CODE HERE!
-        $$$setupUI$$$();
-    }
-
-    /**
-     * Method generated by IntelliJ IDEA GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
-     */
-    private void $$$setupUI$$$() {
-        contentPanel = new JPanel();
-        contentPanel.setLayout(new GridLayoutManager(3, 1, new Insets(0, 0, 0, 0), -1, -1));
-        contentPanel.setMinimumSize(new Dimension(1024, 768));
-        final JToolBar toolBar1 = new JToolBar();
-        toolBar1.setFloatable(false);
-        contentPanel.add(toolBar1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
-        openFileBttn = new JButton();
-        openFileBttn.setIcon(new ImageIcon(getClass().getResource("/icons/small/opened_folder.png")));
-        openFileBttn.setLabel("");
-        openFileBttn.setText("");
-        toolBar1.add(openFileBttn);
-        saveBttn = new JButton();
-        saveBttn.setIcon(new ImageIcon(getClass().getResource("/icons/small/save.png")));
-        saveBttn.setLabel("");
-        saveBttn.setText("");
-        toolBar1.add(saveBttn);
-        addSensorBttn = new JButton();
-        addSensorBttn.setIcon(new ImageIcon(getClass().getResource("/icons/small/plus.png")));
-        addSensorBttn.setLabel("");
-        addSensorBttn.setText("");
-        toolBar1.add(addSensorBttn);
-        compileBttn = new JButton();
-        compileBttn.setIcon(new ImageIcon(getClass().getResource("/icons/small/circled_play.png")));
-        compileBttn.setLabel("");
-        compileBttn.setText("");
-        toolBar1.add(compileBttn);
-        tabbedPane1 = new JTabbedPane();
-        tabbedPane1.setTabPlacement(3);
-        contentPanel.add(tabbedPane1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 692), null, 0, false));
-        visualProgrammingPanel = new JPanel();
-        visualProgrammingPanel.setLayout(new GridBagLayout());
-        visualProgrammingPanel.setBackground(new Color(-12508113));
-        visualProgrammingPanel.setEnabled(true);
-        tabbedPane1.addTab("Visual", visualProgrammingPanel);
-        visualRightSideBar = new JPanel();
-        visualRightSideBar.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        visualRightSideBar.setBackground(new Color(-14675647));
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.weightx = 0.3;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        visualProgrammingPanel.add(visualRightSideBar, gbc);
-        visualSensorPanel = new JPanel();
-        visualSensorPanel.setLayout(new GridBagLayout());
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.7;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        visualProgrammingPanel.add(visualSensorPanel, gbc);
-        codeProgrammingPanel = new JPanel();
-        codeProgrammingPanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        tabbedPane1.addTab("Code", codeProgrammingPanel);
-        final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-        contentPanel.add(panel1, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        flashStatusLabel = new JLabel();
-        flashStatusLabel.setHorizontalAlignment(10);
+        flashStatusLabel = new Label();
         flashStatusLabel.setText("Not Flashed");
-        panel1.add(flashStatusLabel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        connectionTypeStatus = new JLabel();
-        connectionTypeStatus.setHorizontalAlignment(10);
-        connectionTypeStatus.setHorizontalTextPosition(4);
+        flashStatusLabel.setPrefWidth(512);
+        flashStatusLabel.setAlignment(Pos.CENTER);
+        connectionTypeStatus = new Label();
         connectionTypeStatus.setText("Bluetooth");
-        panel1.add(connectionTypeStatus, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        connectionTypeStatus.setPrefWidth(512);
+        connectionTypeStatus.setAlignment(Pos.CENTER);
+        //labelBox.getChildren().addAll(flashStatusLabel, connectionTypeStatus);
+        //System.out.println(String.valueOf(labelBox.getMaxWidth()));¡
+        //System.out.println(String.valueOf(flashStatusLabel.getMaxWidth()));
+        //System.out.println(String.valueOf(connectionTypeStatus.getMaxWidth()));
+
+        addButtonFunctions();
+
+        //this.setBottom(labelBox);
+
+        if(sensorAddDialog != null && sensorAddDialog.getAllSensors().size() > 0){
+//            addSensorToScreen();
+            /*
+            for(Sensor s : sensorAddDialog.getAllSensors()){
+                addSensorToScreen(s);
+                }
+             */
+        }
+
+prepareSensorListView();
+        prepareSideBar();
     }
 
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$() {
-        return contentPanel;
+
+    private void addButtonFunctions(){
+        addSensorBttn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                Stage dialog = new Stage();
+
+                sensorAddDialog = new SensorAddDialog(mainEntrance,dialog, (DeviceProgrammingScreen) self);
+                dialog.setScene(new Scene(sensorAddDialog, 860, 560));
+                //dialog.show();
+
+                mainEntrance.addToStack(false, self);
+                mainEntrance.addToStack(true, sensorAddDialog);
+            }
+        });
+
+        closeBttn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                mainEntrance.addToStack(false, self);
+            }
+        });
+
+
+        compileBttn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                if(tabbedPane1.getSelectionModel().getSelectedIndex() == 1)
+                {
+                    String code = codeArea.getText().replace('\n', ' ');
+
+                    codeProgrammingManager = new CodeProgrammingManager(code, codeGenerationTemplate);
+                    codeProgrammingManager.compile();
+                }
+                codeDistributionManager = new CodeDistributionManager(codeGenerationTemplate, false);
+                codeDistributionManager.flashCode2Device();
+                System.out.println("Burak");
+            }
+        });
+    }
+
+
+    static class UpdateCell extends TreeCell<Object> {
+
+        public void updateItem(Object item, boolean empty){
+            super.updateItem(item, empty);
+            if(empty || item == null){
+
+            }
+            else
+                setText(item.toString());
+            setFont(Font.font("Courier New", 15));
+            setStyle("-fx-background-color: #eeeeee;");
+        }
+
+    }
+
+    private void prepareSensorListView()
+    {
+        tree = new TreeView();
+        tree.setCellFactory(cb -> new UpdateCell());
+        tree.setPrefSize(1024, 500);
+        rootEntry = new TreeItem<>(codeGenerationTemplate.getBoard());
+
+        tree.getSelectionModel().selectedItemProperty().addListener( new ChangeListener() {
+
+            @Override
+            public void changed(ObservableValue observable, Object oldValue,
+                                Object newValue) {
+
+                TreeItem<Object> selectedItem = (TreeItem<Object>) newValue;
+                setRight(accordionBox);
+                if(selectedItem.getValue() instanceof Board)
+                {
+                    sensorAddDetailView.setBoard((Board) selectedItem.getValue());
+                    sensorAddDetailView.hideLowerBoundFieldTextField();
+                    sensorAddDetailView.hideUpperBoundFieldTextField();
+                    sensorAddDetailView.showSampleRateFieldTextField();
+                    System.out.println("Selected Text : " + selectedItem.getValue());
+                }
+                else if(selectedItem.getValue() instanceof Sensor)
+                {
+                    sensorAddDetailView.setBoard(((Sensor)selectedItem.getValue()).getParentBoard());
+                    sensorAddDetailView.hideLowerBoundFieldTextField();
+                    sensorAddDetailView.hideUpperBoundFieldTextField();
+                    sensorAddDetailView.showSampleRateFieldTextField();
+                    System.out.println("Selected Text : " + selectedItem.getValue());
+                }
+                else if(selectedItem.getValue() instanceof Variable)
+                {
+                    sensorAddDetailView.setVariable((Variable)selectedItem.getValue());
+                    sensorAddDetailView.hideSampleRateFieldTextField();
+                    sensorAddDetailView.showLowerBoundFieldTextField();
+                    sensorAddDetailView.showUpperBoundFieldTextField();
+
+                    System.out.println("Selected Text : " + selectedItem.getValue());
+                }
+
+                // do what ever you want
+            }
+
+        });
+
+        tree.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                Node node = event.getPickResult().getIntersectedNode();
+
+                if (node instanceof  LabeledText && ((LabeledText) node).getText().compareTo(codeGenerationTemplate.getBoard().getUserFriendlyName())==0)  {
+                    if(isRootClicked)
+                    {
+                        setRight(null);
+                        isRootClicked = false;
+                    }
+                    else
+                    {
+                        setRight(accordionBox);
+                        isRootClicked = true;
+                    }
+                }
+            }
+        });
+        visualSensorPane.getChildren().add(tree);
+
+//        rootEntry = new TreeItem<>("");
+
+
+        rootEntry.setExpanded(true);
+
+//        rootEntry.getGraphic().addEventHandler(MouseEvent.MOUSE_PRESSED, new EventHandler<MouseEvent>() {
+//            @Override
+//            public void handle(MouseEvent event) {
+//                if(isRootClicked)
+//                {
+//                    setRight(null);
+//                    isRootClicked = false;
+//                }
+//                else
+//                {
+//                    setRight(accordionBox);
+//                    isRootClicked = true;
+//                }
+//            }
+//        });
+
+
+//        rootEntry.addEventHandler(Click, new EventHandler<TreeItem.TreeModificationEvent<Object>>() {
+//            @Override
+//            public void handle(TreeItem.TreeModificationEvent<Object> event) {
+//                if(sensorAddDetailView == null){
+//                    setRight(accordionBox);
+//
+//                }
+//
+//                isOpen = !isOpen;
+//                rootEntry.setExpanded(true);
+//                tree.setCellFactory(e -> new UpdateCell());
+//
+//
+//            }
+//        });
+//
+//        rootEntry.addEventHandler(TreeItem.branchCollapsedEvent(), new EventHandler<TreeItem.TreeModificationEvent<Object>>() {
+//            @Override
+//            public void handle(TreeItem.TreeModificationEvent<Object> event) {
+//                rootEntry.setExpanded(false);
+//                tree.setCellFactory(e -> new UpdateCell());
+//            }
+//        });
+
+        tree.setRoot(rootEntry);
+    }
+
+    private void prepareSideBar()
+    {
+        accordion1 = new Accordion();
+        accordion2 = new Accordion();
+        sensorAddDetailView = new SensorAddDetailView();
+        boardDetailView = new BoardDetailView();
+        boardDetailView.setBoard(codeGenerationTemplate.getBoard());
+
+        accordionBox = new VBox();
+        TitledPane sensorDetails = new TitledPane();
+        sensorDetails.setText("Sensor Details");
+        sensorDetails.setContent(sensorAddDetailView);
+        TitledPane boardDetails = new TitledPane();
+        boardDetails.setText("Board Details");
+        boardDetails.setContent(boardDetailView);
+        boardDetails.setStyle("-fx-highlight-text-fill: lightblue");
+
+        accordion1.getPanes().add(sensorDetails);
+        accordion2.getPanes().add(boardDetails);
+
+
+        accordionBox.getChildren().addAll(accordion1, accordion2);
+
+    }
+
+    public void addSensorToScreen(Sensor sensor){
+        TreeItem<Object> root = new TreeItem<>(sensor);
+
+        for(Variable variable:sensor.getVariables())
+        {
+            if(variable.isCommunicationVariable()) {
+                TreeItem<Object> item1 = new TreeItem<>();
+                item1.setValue(variable);
+                root.getChildren().add(item1);
+                item1.addEventHandler(TreeItem.branchExpandedEvent(), new EventHandler<TreeItem.TreeModificationEvent<Object>>() {
+                    @Override
+                    public void handle(TreeItem.TreeModificationEvent<Object> event) {
+                        System.out.println("Burak");
+                    }
+                });
+            }
+        }
+
+
+        rootEntry.getChildren().add(root);
+        isOpen = false;
+
+        root.addEventHandler(TreeItem.branchExpandedEvent(), new EventHandler<TreeItem.TreeModificationEvent<Object>>() {
+            @Override
+            public void handle(TreeItem.TreeModificationEvent<Object> event) {
+                root.setExpanded(true);
+                tree.setCellFactory(e -> new UpdateCell());
+
+
+            }
+        });
+
+        root.addEventHandler(TreeItem.branchCollapsedEvent(), new EventHandler<TreeItem.TreeModificationEvent<Object>>() {
+            @Override
+            public void handle(TreeItem.TreeModificationEvent<Object> event) {
+                root.setExpanded(false);
+                tree.setCellFactory(e -> new UpdateCell());
+            }
+        });
+        codeGenerationTemplate.getBoard().getSensors().add(sensor);
+        DataManager.getInstance().activeSensors.add(sensor);
+
+
+//        tree.setOnMouseClicked(new EventHandler<MouseEvent>() {
+//            @Override
+//            public void handle(MouseEvent event) {
+//                System.out.println("click");
+//
+//                if(sensorAddDetailView == null){
+//                    sensorAddDetailView = new SensorAddDetailView();
+//                    accordionBox.setPrefWidth(200);
+//                    setRight(accordionBox);
+//                }
+//
+//                if (!isOpen) {
+//                    sensorDetails.setExpanded(true);
+//                    boardDetails.setExpanded(true);
+//
+//                    System.out.println(isOpen);
+//                    isOpen = true;
+//
+//                } else if (isOpen) {
+//                    sensorDetails.setExpanded(false);
+//                    boardDetails.setExpanded(false);
+//
+//                    System.out.println(isOpen);
+//                    isOpen = false;
+//                }
+//
+//                Node node = event.getPickResult().getIntersectedNode();
+//                // Accept clicks only on node cells, and not on empty spaces of the TreeView
+//                if (node instanceof Text || (node instanceof TreeCell && ((TreeCell) node).getText() != null)) {
+//                    String name = (String) ((TreeItem)tree.getSelectionModel().getSelectedItem()).getValue();
+//                    boolean isLeaf = ((TreeItem) tree.getSelectionModel().getSelectedItem()).isLeaf();
+//                    System.out.println("Node click: " + name);
+//
+//                    BoardDetailView boardDetailView = new BoardDetailView();
+//                    boardDetails.setContent(boardDetailView);
+//
+//                    SensorAddDetailView sensorAddDetailView = new SensorAddDetailView();
+//                    sensorDetails.setContent(sensorAddDetailView);
+//
+//                    if(isLeaf){
+//
+//                        sensorAddDetailView.setContent(true);
+//                        //sensorDetails.setContent();
+//
+//                    }
+//                    else{
+//                        sensorAddDetailView.setContent(false);
+//                    }
+//
+//                }
+//
+//            }
+//        });
+    }
+
+//    public void addSensor(Sensor sensor, boolean isOnlyViewAdd) {
+//
+//
+//        codeGenerationTemplate.getBoardView().getParentView().getParentView().getSensorListView().addSensor(sensor.getName());
+//        DefaultMutableTreeNode sensorNode = new DefaultMutableTreeNode(sensor.getName());
+//        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
+//
+//        for (Variable variable : sensor.getVariables()) {
+//
+//            if (variable.isCommunicationVariable() == true) {
+//
+//                DefaultMutableTreeNode innerNode = new DefaultMutableTreeNode(variable.getPreferredName());
+//                sensorNode.add(innerNode);
+//            }
+//        }
+//        rootNode.add(sensorNode);
+//        ((DefaultTreeModel) tree.getModel()).reload();
+//        tree.setVisible(true);
+//        if (isOnlyViewAdd == false)
+//            codeGenerationTemplate.getBoard().getSensors().add(sensor);
+//
+//        DataManager.getInstance().activeSensors.add(sensor);
+//    }
+
+    public VBox addDummyVBox(){
+        VBox dummyBox = new VBox();
+        Text text = new Text("Blah blah blah");
+        dummyBox.getChildren().add(text);
+
+        return dummyBox;
+    }
+
+    private  StyleSpans<Collection<String>> computeHighlighting(String text) {
+        Matcher matcher = PATTERN.matcher(text);
+        int lastKwEnd = 0;
+        StyleSpansBuilder<Collection<String>> spansBuilder
+                = new StyleSpansBuilder<>();
+        while(matcher.find()) {
+            String styleClass =
+                    matcher.group("KEYWORD") != null ? "keyword" :
+                            matcher.group("PAREN") != null ? "paren" :
+                                    matcher.group("BRACE") != null ? "brace" :
+                                            matcher.group("BRACKET") != null ? "bracket" :
+                                                    matcher.group("SEMICOLON") != null ? "semicolon" :
+                                                            matcher.group("STRING") != null ? "string" :
+                                                                    matcher.group("COMMENT") != null ? "comment" :
+                                                                            null; /* never happens */ assert styleClass != null;
+            spansBuilder.add(Collections.emptyList(), matcher.start() - lastKwEnd);
+            spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
+            lastKwEnd = matcher.end();
+        }
+        spansBuilder.add(Collections.emptyList(), text.length() - lastKwEnd);
+        return spansBuilder.create();
     }
 }

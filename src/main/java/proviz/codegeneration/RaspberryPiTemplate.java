@@ -2,6 +2,7 @@ package proviz.codegeneration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import proviz.BoardView;
+import proviz.LiveDataTable;
 import proviz.LiveDataTableModel;
 import proviz.ProjectConstants;
 import proviz.models.devices.Board;
@@ -15,9 +16,9 @@ import java.net.URISyntaxException;
  */
 public class RaspberryPiTemplate extends CodeGenerationTemplate {
 
-    public RaspberryPiTemplate(BoardView boardView, LiveDataTableModel liveDataTableModel)
+    public RaspberryPiTemplate(BoardView boardView, LiveDataTable liveDataTable)
     {
-        super(boardView,liveDataTableModel);
+        super(boardView,liveDataTable);
     }
 
     public RaspberryPiTemplate(BoardView boardView)

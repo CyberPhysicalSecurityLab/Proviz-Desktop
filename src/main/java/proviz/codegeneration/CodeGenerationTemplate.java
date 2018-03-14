@@ -1,6 +1,8 @@
 package proviz.codegeneration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import proviz.BoardView;
+import proviz.LiveDataTable;
 import proviz.LiveDataTableModel;
 import proviz.connection.DataReceiveListener;
 import proviz.models.devices.Board;
@@ -8,6 +10,8 @@ import proviz.models.devices.Sensor;
 import proviz.ProjectConstants;
 import proviz.models.devices.Pin;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -23,7 +27,7 @@ public abstract class CodeGenerationTemplate  {
     private BoardView boardView;
     private ProjectConstants.CONNECTION_TYPE connectionType;
     protected UUID boardUniqueCode;
-    private LiveDataTableModel liveDataTableModel;
+    private LiveDataTable liveDataTable;
 
 
 
@@ -52,10 +56,10 @@ this.boardView = boardView;
         boardUniqueCode = UUID.randomUUID();
     }
 
-    public CodeGenerationTemplate(BoardView boardView,LiveDataTableModel liveDataTableModel)
+    public CodeGenerationTemplate(BoardView boardView,LiveDataTable liveDataTableModel)
     {
         DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
-        this.liveDataTableModel = liveDataTableModel;
+        this.liveDataTable = liveDataTableModel;
 
         Date date = new Date();
         createdDate = dateFormat.format(date);
@@ -92,13 +96,25 @@ public void addSensorEntry2List(Sensor sensor)
         this.board = board;
         this.board.setUniqueId(boardUniqueCode.toString().replace("-","_"));
         board.subscribe(boardView);
-        if(liveDataTableModel!= null)
-        liveDataTableModel.subscribeDataReceiverLister(board);
+        if(liveDataTable!= null)
+        liveDataTable.subscribeDataReceiverLister(board);
         if(board == null) {
-            boardView.getParentView().getParentView().setBoardForRightSideBar(board);
-            boardView.getParentView().getParentView().showRightSideBar();
+//            boardView.getParentView().getParentView().setBoardForRightSideBar(board);
+//            boardView.getParentView().getParentView().showRightSideBar();
         }
     }
+
+//    public void loadBoardDetails(String modelCode) {
+//        this.board.setUniqueId(boardUniqueCode.toString().replace("-","_"));
+//        Board newBoard = loadBoardDetailWithModelName(modelCode);
+//
+//        newBoard.subscribe(boardView);
+//        if(liveDataTableModel!= null)
+//            liveDataTableModel.subscribeDataReceiverLister(board);
+//      this.board = newBoard;
+//    }
+
+
     public abstract void addSensor(Sensor sensor);
 
 

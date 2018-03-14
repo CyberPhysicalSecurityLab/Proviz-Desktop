@@ -75,7 +75,7 @@ public class RaspberryPiFlasher extends CodeFlasher {
     public void sendCode2Device()
     {
         try {
-            ProvizProperties.getInstance().writeOnlyDeviceIdandConnetionTYPE2Properties(raspberryPiTemplate.getBoard().getUniqueId(),raspberryPiTemplate.getConnectionType());
+            ProvizProperties.getInstance().writeOnlyDeviceIdandConnetionTYPE2Properties(raspberryPiTemplate.getBoard().getUniqueId(),raspberryPiTemplate.getBoard().getConnectionType());
             sshHandler = new SshHandler();
             sshHandler.connect();
             sshHandler.transferApplication();

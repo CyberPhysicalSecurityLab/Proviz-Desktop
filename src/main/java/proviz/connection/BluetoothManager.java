@@ -135,21 +135,27 @@ private void discoverServices(BluetoothDevice bluetoothDevice) throws Interrupte
 
 
     public void startBluetoothService() {
-        try {
-            if (LocalDevice.isPowerOn()) {
-                System.out.println(" Bluetooth Search started");
-                LocalDevice.getLocalDevice().setDiscoverable(DiscoveryAgent.GIAC);
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (LocalDevice.isPowerOn()) {
+                    System.out.println(" Bluetooth Search started");
+                    LocalDevice.getLocalDevice().setDiscoverable(DiscoveryAgent.GIAC);
 
-                LocalDevice.getLocalDevice().getDiscoveryAgent().startInquiry(DiscoveryAgent.GIAC, discoveryListener);
+                    LocalDevice.getLocalDevice().getDiscoveryAgent().startInquiry(DiscoveryAgent.GIAC, discoveryListener);
 
+                }
+
+
+                uuids = new UUID[1];
+                uuids[0] = ProjectConstants.init().getBluetoothServiceUUID();
+            }  catch (BluetoothStateException e) {
+                e.printStackTrace();
             }
-
-
-            uuids = new UUID[1];
-            uuids[0] = ProjectConstants.init().getBluetoothServiceUUID();
-        }  catch (BluetoothStateException e) {
-            e.printStackTrace();
         }
+    }).start();
+
     }
 
 

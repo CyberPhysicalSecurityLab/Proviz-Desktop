@@ -1,6 +1,20 @@
 package proviz.asci;
 
-import proviz.ProjectConstants;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.ListView;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import proviz.connection.BluetoothActionsListener;
 import proviz.connection.BluetoothConnection;
 import proviz.connection.BluetoothManager;
@@ -9,104 +23,76 @@ import proviz.models.connection.BluetoothDevice;
 import javax.bluetooth.ServiceRecord;
 import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
-import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+
 import java.io.IOException;
 import java.util.HashMap;
 
 /**
- * Created by Burak on 1/24/17.
+ * Created by Burak on 8/10/17.
  */
-public class BluetoothDeviceSearchPanel extends JPanel implements BluetoothActionsListener{
-
-    private JProgressBar deviceSearchProgressBar;
-    private JLabel searchStatusLabel;
-    private JList deviceListView;
-    private JButton pairBttn;
-    private JPanel panel1;
+public class BluetoothDeviceSearchPanel extends VBox implements BluetoothActionsListener {
+    //private Stage stage;
+    ProgressBar pBar;
+    Button pairButt;
+    Text statusLabel;
     HashMap<String, BluetoothDevice> deviceHashMap;
+    ListView<String> deviceListView;
+    ObservableList<String> foundDevices;
     private BluetoothManager bluetoothManager;
     private DeviceConfigurationDialog deviceConfigurationDialog;
 
 
-
-    public BluetoothDeviceSearchPanel(DeviceConfigurationDialog deviceConfigurationDialog)
-    {
+    public BluetoothDeviceSearchPanel(DeviceConfigurationDialog deviceConfigurationDialog){
+         deviceListView = new ListView<>();
+        foundDevices = FXCollections.observableArrayList();
         initUI();
-        DefaultListModel<String> listModel;
-        this.deviceConfigurationDialog  = deviceConfigurationDialog;
-        listModel = new DefaultListModel<>();
-        setBackground(Color.RED);
-        setLayout(new GridBagLayout());
-        pairBttn.setEnabled(false);
-        Dimension dimension = new Dimension(980,400);
-        setPreferredSize(dimension);
-        setMaximumSize(dimension);
-        setMinimumSize(dimension);
-        GridBagConstraints constraints = new GridBagConstraints();
-        constraints.anchor = GridBagConstraints.CENTER;
-        add(panel1,constraints);
-        deviceSearchProgressBar.setIndeterminate(true);
+
         deviceHashMap = new HashMap<>();
 
-        deviceListView.setModel(listModel);
+        //deviceListView.setModel(listModel);
+        // todo devicelist viewde device geldigi zaman pairBttn enable yapacaksin.
 
-        deviceListView.addListSelectionListener(new ListSelectionListener() {
+        pairButt.setDisable(true);
+
+
+        pairButt.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
-            public void valueChanged(ListSelectionEvent e) {
-                pairBttn.setEnabled(true);
-            }
-        });
+            public void handle(MouseEvent event) {
+                statusLabel.setText("Preparing for Pair Request");
 
+                Task task = new Task<Void>()
+                {
+                    @Override
+                    protected void succeeded() {
 
+                    }
 
-        pairBttn.addMouseListener(new MouseListener() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                try {
+                    StreamConnection streamConnection;
+                    @Override
+                    public void run() {
 
-                    searchStatusLabel.setText("Preparing for Pair Request");
+                        BluetoothDevice selectedBluetoothDevice = deviceHashMap.get(deviceListView.getSelectionModel().getSelectedItem());
 
-                    SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-                        StreamConnection streamConnection;
-
-                        @Override
-                        protected Void doInBackground() throws Exception {
-                            BluetoothDevice selectedBluetoothDevice = deviceHashMap.get(deviceListView.getSelectedValue());
-
-                            if (selectedBluetoothDevice.getServices().length > 0) {
-
-                                 streamConnection  = (StreamConnection) Connector.open(selectedBluetoothDevice.getServices()[0].getConnectionURL(ServiceRecord.NOAUTHENTICATE_NOENCRYPT, true));
-
-                                BluetoothConnection bluetoothConnection = new BluetoothConnection();
-
-                                bluetoothConnection.setServiceRecord(selectedBluetoothDevice.getServices()[0]);
-                                deviceConfigurationDialog.getCandidateBoard().setBaseConnection(bluetoothConnection);
-                                bluetoothConnection.setCodeGenerationTemplate(deviceConfigurationDialog.getCodeGenerationTemplate());
-
-                                //todo BLuecove has bug. System could not authenticate with devices.
-                            }
+                        if (selectedBluetoothDevice.getServices().length > 0) {
 
                             try {
-                                deviceConfigurationDialog.enableOKButton();
-
-
-
-                            } catch (Exception e1) {
-                                e1.printStackTrace();
+                                streamConnection  = (StreamConnection) Connector.open(selectedBluetoothDevice.getServices()[0].getConnectionURL(ServiceRecord.NOAUTHENTICATE_NOENCRYPT, true));
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
 
-                            return null;
+                            BluetoothConnection bluetoothConnection = new BluetoothConnection();
 
+                            bluetoothConnection.setServiceRecord(selectedBluetoothDevice.getServices()[0]);
+                            deviceConfigurationDialog.getCandidateBoard().setBaseConnection(bluetoothConnection);
+                            bluetoothConnection.setCodeGenerationTemplate(deviceConfigurationDialog.getCodeGenerationTemplate());
+
+                            //todo BLuecove has bug. System could not authenticate with devices.
                         }
 
-                        @Override
-                        protected void done() {
-                                searchStatusLabel.setText("Pair Operation OK.");
+                        try {
+                            deviceConfigurationDialog.enablePostiviteButton();
+                            statusLabel.setText("Pair Operation OK.");
                             try {
                                 streamConnection.close();
                             } catch (IOException e1) {
@@ -114,111 +100,68 @@ public class BluetoothDeviceSearchPanel extends JPanel implements BluetoothActio
                             }
 
 
+
+                        } catch (Exception e1) {
+                            e1.printStackTrace();
                         }
+                    }
 
-                    };
+                    @Override
+                    protected Void call() throws Exception {
+                        return null;
+                    }
+                };
 
-                    worker.execute();
-                }
-                catch (Exception ex)
-                {
-                    ex.printStackTrace();
-                }
 
-            }
 
-            @Override
-            public void mousePressed(MouseEvent e) {
 
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-
+                new Thread(task).start();
             }
         });
 
-        searchStatusLabel.setText("Device Searching..");
-    }
 
+
+
+        statusLabel.setText("Device Searching..");
+    }
     public void activeBluetooth()
     {
         bluetoothManager = BluetoothManager.init();
         bluetoothManager.suscribeBleutoothActionListener(this);
         bluetoothManager.startBluetoothService();
     }
-    private void initUI()
-    {
-        panel1 = new JPanel();
-        panel1.setLayout(new GridBagLayout());
-        panel1.setMinimumSize(new Dimension(960, 400));
-        panel1.setPreferredSize(new Dimension(960, 400));
-        panel1.setRequestFocusEnabled(true);
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridBagLayout());
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        panel1.add(panel2, gbc);
-        deviceSearchProgressBar = new JProgressBar();
-        deviceSearchProgressBar.setValue(50);
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel2.add(deviceSearchProgressBar, gbc);
-        searchStatusLabel = new JLabel();
-        searchStatusLabel.setText("Device Searching..");
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.weightx = 1.0;
-        panel1.add(searchStatusLabel, gbc);
-        deviceListView = new JList();
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        panel1.add(deviceListView, gbc);
-        pairBttn = new JButton();
-        pairBttn.setText("Pair");
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.weightx = 1.0;
-        gbc.anchor = GridBagConstraints.EAST;
-        panel1.add(pairBttn, gbc);
-        final JLabel label1 = new JLabel();
-        label1.setText("Available Devices");
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        panel1.add(label1, gbc);
 
+    private void initUI(){
+        Text aDev = new Text("Available Devices");
+        deviceListView.setPrefHeight(300);
+        deviceListView.setPrefWidth(720);
+        deviceListView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                if(pairButt.isDisabled())
+                    pairButt.setDisable(false);
+            }
+        });
+//        if(pairButt.isDisabled())
+//            pairButt.setDisable(false);
+        pairButt = new Button("Pair");
+        pairButt.setDisable(true);
+        HBox pairButtBox = new HBox();
+        pairButtBox.getChildren().add(pairButt);
+        pairButtBox.setAlignment(Pos.BASELINE_RIGHT);
+        pairButtBox.setPadding(new Insets(0, 20, 10, 0));
+
+         statusLabel = new Text("Searching Devices");
+        pBar = new ProgressBar(-1.0f); //would add code so that progress bar stops once device is found
+        pBar.setPrefWidth(720);
+        pBar.setPadding(new Insets(0, 0, 20, 0));
+
+        setAlignment(Pos.CENTER);
+        getChildren().addAll(aDev, deviceListView, pairButtBox, statusLabel, pBar);
     }
 
     @Override
     public void newDeviceDiscovered(BluetoothDevice device) {
-
-
         try {
             String deviceName  = device.getRemoteDevice().getFriendlyName(false);
             if(!(deviceName != null && deviceName.length()>0))
@@ -234,20 +177,19 @@ public class BluetoothDeviceSearchPanel extends JPanel implements BluetoothActio
             e.printStackTrace();
         }
 
-
-
-
     }
 
     private void updateList()
     {
-        DefaultListModel<String> bluetoothdevicelist = new DefaultListModel<>();
         Object[] keys= deviceHashMap.keySet().toArray();
         for(Object deviceName: keys)
         {
-            bluetoothdevicelist.addElement((String)deviceName);
+            foundDevices.add((String)deviceName);
         }
 
-        deviceListView.setModel(bluetoothdevicelist);
+        deviceListView.setItems(foundDevices);
+
     }
+
+
 }

@@ -1,31 +1,36 @@
 package proviz.thirdpartyconnections.tablet;
 
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import java.awt.*;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.*;
 
 /**
  * Created by Burak on 5/13/17.
  */
-public class TabletConnectionFinalPanel extends JPanel {
+public class TabletConnectionFinalPanel extends Pane {
 
-    private JLabel targetIpAddress;
-    private JLabel searchingDeviceTextBox;
-    private JLabel iniatingSessionTextBox;
-    private JLabel synchingCurrentTopologyTextBox;
-    private JLabel searchingTargetDeviceStatusImage;
-    private JLabel IniatingSessionStatusImage;
-    private JLabel SynchingCurrentsearchingTargetDeviceStatusImage;
-    private JLabel informingBoardslabel;
-    private JLabel informingboardslabelImage;
+    private Label targetIpAddress;
+    private Label searchingDeviceTextBox;
+    private Label iniatingSessionTextBox;
+    private Label synchingCurrentTopologyTextBox;
+    private Label searchingTargetDeviceStatusImage;
+    private Label iniatingSessionStatusImage;
+    private Label synchingCurrentsearchingTargetDeviceStatusImage;
+    private Label informingBoardslabel;
+    private Label informingboardslabelImage;
 
-    private boolean isSearchingTargetFinishedSuccess;
-    private boolean isSynchingCurrentTopologyFinishedSuccess;
-    private boolean isInformingBoardsFinishedSuccess;
-    private boolean isSessionIniationFinishedSuccess;
+    private boolean isSearchingTargetFinishedSuccess = true;
+    private boolean isSynchingCurrentTopologyFinishedSuccess = true;
+    private boolean isInformingBoardsFinishedSuccess = true;
+    private boolean isSessionIniationFinishedSuccess = true;
+
+    public TabletConnectionFinalPanel(){
+        initUI();
+    }
 
     public boolean isSearchingTargetFinishedSuccess() {
         return isSearchingTargetFinishedSuccess;
@@ -59,17 +64,19 @@ public class TabletConnectionFinalPanel extends JPanel {
         isSessionIniationFinishedSuccess = sessionIniationFinishedSuccess;
     }
 
+
+
     public void SearchingTargetDeviceFinished(boolean isSuccessful)
     {
         if(isSuccessful)
         {
-            searchingTargetDeviceStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/checked_small.png")));
+            searchingTargetDeviceStatusImage.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/icons/small/error_small.png"))));
             searchingTargetDeviceStatusImage.setVisible(true);
             isSearchingTargetFinishedSuccess = true;
         }
         else
         {
-            searchingTargetDeviceStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/error_small.png")));
+            searchingTargetDeviceStatusImage.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/icons/small/error_small.png"))));
             searchingTargetDeviceStatusImage.setVisible(true);
             isSearchingTargetFinishedSuccess = false;
 
@@ -80,14 +87,14 @@ public class TabletConnectionFinalPanel extends JPanel {
     {
         if(isSuccessful)
         {
-            SynchingCurrentsearchingTargetDeviceStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/checked_small.png")));
-            SynchingCurrentsearchingTargetDeviceStatusImage.setVisible(true);
+            synchingCurrentsearchingTargetDeviceStatusImage.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/icons/small/checked_small.png"))));
+            synchingCurrentsearchingTargetDeviceStatusImage.setVisible(true);
             isSynchingCurrentTopologyFinishedSuccess = true;
         }
         else
         {
-            SynchingCurrentsearchingTargetDeviceStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/error_small.png")));
-            SynchingCurrentsearchingTargetDeviceStatusImage.setVisible(true);
+            synchingCurrentsearchingTargetDeviceStatusImage.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/icons/small/error_small.png"))));
+            synchingCurrentsearchingTargetDeviceStatusImage.setVisible(true);
             isSynchingCurrentTopologyFinishedSuccess = false;
         }
     }
@@ -96,13 +103,13 @@ public class TabletConnectionFinalPanel extends JPanel {
     {
         if(isSuccessful)
         {
-            informingboardslabelImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/checked_small.png")));
+            informingboardslabelImage.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/icons/small/error_small.png"))));
             informingboardslabelImage.setVisible(true);
             isInformingBoardsFinishedSuccess = true;
         }
         else
         {
-            informingboardslabelImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/error_small.png")));
+            informingboardslabelImage.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/icons/small/error_small.png"))));
             informingboardslabelImage.setVisible(true);
             isInformingBoardsFinishedSuccess = false;
         }
@@ -112,119 +119,81 @@ public class TabletConnectionFinalPanel extends JPanel {
     {
         if(isSuccessful)
         {
-            IniatingSessionStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/checked_small.png")));
-            IniatingSessionStatusImage.setVisible(true);
+            iniatingSessionStatusImage.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/icons/small/error_small.png"))));
+            iniatingSessionStatusImage.setVisible(true);
             isSessionIniationFinishedSuccess = true;
         }
         else
         {
-            IniatingSessionStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/error_small.png")));
-            IniatingSessionStatusImage.setVisible(true);
+            iniatingSessionStatusImage.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/icons/small/error_small.png"))));
+            iniatingSessionStatusImage.setVisible(true);
             isSessionIniationFinishedSuccess = false;
         }
     }
 
+    public void initUI(){
 
-    public void rollBackUI()
-    {
-        informingboardslabelImage.setVisible(false);
-        SynchingCurrentsearchingTargetDeviceStatusImage.setVisible(false);
-        IniatingSessionStatusImage.setVisible(false);
-        searchingTargetDeviceStatusImage.setVisible(false);
-    }
+        Label label1 = new Label();
+        ImageView designer = new ImageView(new Image("/images/designer.png"));
+        designer.setPreserveRatio(true);
+        designer.setFitWidth(300);
+        label1.setGraphic(designer);
+        label1.setAlignment(Pos.CENTER);
+        VBox vBox1 = new VBox();
+        vBox1.getChildren().add(label1);
+        vBox1.setAlignment(Pos.CENTER);
+        vBox1.setPadding(new Insets(10));
 
-    public void initiliazeUI()
-    {
-        final JPanel panel1 = this;
-        panel1.setLayout(new GridBagLayout());
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridBagLayout());
-        panel2.setMinimumSize(new Dimension(872, 613));
-        panel2.setPreferredSize(new Dimension(872, 613));
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel1.add(panel2, gbc);
-        panel2.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), null, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, null, new Color(-4473925)));
-        final JPanel panel3 = new JPanel();
-        panel3.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.4;
-        gbc.fill = GridBagConstraints.BOTH;
-        panel2.add(panel3, gbc);
-        final JLabel label1 = new JLabel();
-        label1.setIcon(new ImageIcon(getClass().getResource("/images/designer.png")));
-        label1.setInheritsPopupMenu(true);
-        label1.setText("");
-        panel3.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JPanel panel4 = new JPanel();
-        panel4.setLayout(new GridLayoutManager(4, 1, new Insets(50, 25, 0, 25), -1, -1));
-        panel3.add(panel4, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_NORTH, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        final JPanel panel5 = new JPanel();
-        panel5.setLayout(new BorderLayout(0, 0));
-        panel4.add(panel5, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        searchingDeviceTextBox = new JLabel();
+        targetIpAddress = new Label();
+
+        searchingDeviceTextBox = new Label();
         searchingDeviceTextBox.setText("Searching Target Device");
-        panel5.add(searchingDeviceTextBox, BorderLayout.WEST);
-        searchingTargetDeviceStatusImage = new JLabel();
-        searchingTargetDeviceStatusImage.setHorizontalAlignment(4);
-        searchingTargetDeviceStatusImage.setHorizontalTextPosition(11);
-        searchingTargetDeviceStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/checked_small.png")));
-        searchingTargetDeviceStatusImage.setText("");
-        searchingTargetDeviceStatusImage.setVisible(false);
-        panel5.add(searchingTargetDeviceStatusImage, BorderLayout.EAST);
-        final JPanel panel6 = new JPanel();
-        panel6.setLayout(new BorderLayout(0, 0));
-        panel4.add(panel6, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        synchingCurrentTopologyTextBox = new JLabel();
-        synchingCurrentTopologyTextBox.setHorizontalAlignment(2);
-        synchingCurrentTopologyTextBox.setHorizontalTextPosition(2);
+        searchingTargetDeviceStatusImage = new Label();
+
+
+        synchingCurrentTopologyTextBox = new Label();
         synchingCurrentTopologyTextBox.setText("Synching Current Topology with Tablet");
-        panel6.add(synchingCurrentTopologyTextBox, BorderLayout.WEST);
-        SynchingCurrentsearchingTargetDeviceStatusImage = new JLabel();
-        SynchingCurrentsearchingTargetDeviceStatusImage.setHorizontalAlignment(4);
-        SynchingCurrentsearchingTargetDeviceStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/checked_small.png")));
-        SynchingCurrentsearchingTargetDeviceStatusImage.setText("");
-        SynchingCurrentsearchingTargetDeviceStatusImage.setVisible(false);
-        panel6.add(SynchingCurrentsearchingTargetDeviceStatusImage, BorderLayout.EAST);
-        final JPanel panel7 = new JPanel();
-        panel7.setLayout(new BorderLayout(0, 0));
-        panel6.add(panel7, BorderLayout.SOUTH);
-        informingBoardslabel = new JLabel();
-        informingBoardslabel.setHorizontalAlignment(2);
-        informingBoardslabel.setHorizontalTextPosition(2);
+        synchingCurrentsearchingTargetDeviceStatusImage = new Label();
+
+        informingBoardslabel = new Label();
         informingBoardslabel.setText("Informing boards to create connection with Table");
-        panel7.add(informingBoardslabel, BorderLayout.WEST);
-        informingboardslabelImage = new JLabel();
-        informingboardslabelImage.setHorizontalAlignment(4);
-        informingboardslabelImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/checked_small.png")));
-        informingboardslabelImage.setText("");
-        informingboardslabelImage.setVisible(false);
-        panel7.add(informingboardslabelImage, BorderLayout.EAST);
-        final JPanel panel8 = new JPanel();
-        panel8.setLayout(new BorderLayout(0, 0));
-        panel4.add(panel8, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        iniatingSessionTextBox = new JLabel();
+        informingboardslabelImage= new Label();
+
+        iniatingSessionTextBox = new Label();
         iniatingSessionTextBox.setText("Initiating Session Create Protocol");
-        panel8.add(iniatingSessionTextBox, BorderLayout.WEST);
-        IniatingSessionStatusImage = new JLabel();
-        IniatingSessionStatusImage.setHorizontalAlignment(4);
-        IniatingSessionStatusImage.setIcon(new ImageIcon(getClass().getResource("/icons/small/checked_small.png")));
-        IniatingSessionStatusImage.setText("");
-        IniatingSessionStatusImage.setVisible(false);
-        panel8.add(IniatingSessionStatusImage, BorderLayout.EAST);
-        final JPanel panel9 = new JPanel();
-        panel9.setLayout(new GridBagLayout());
-        panel4.add(panel9, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        targetIpAddress = new JLabel();
-        targetIpAddress.setText("Target Device: 10.203.123.222");
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.WEST;
-        panel9.add(targetIpAddress, gbc);
+        iniatingSessionStatusImage = new Label();
+
+        SynchingCurrentTopologyFinished(true);
+        SearchingTargetDeviceFinished(true);
+        SessionInitiationFinished(true);
+        InformingBoardsFinished(true);
+
+        GridPane gridPane1 = new GridPane();
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setPercentWidth(85);
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setPercentWidth(15);
+        gridPane1.getColumnConstraints().addAll(col1, col2);
+        gridPane1.add(targetIpAddress, 0, 0);
+        gridPane1.add(searchingDeviceTextBox, 0, 1);
+        gridPane1.add(searchingTargetDeviceStatusImage, 1, 1);
+        gridPane1.add(iniatingSessionTextBox, 0, 2);
+        gridPane1.add(iniatingSessionStatusImage, 1, 2);
+        gridPane1.add(synchingCurrentTopologyTextBox, 0, 3);
+        gridPane1.add(synchingCurrentsearchingTargetDeviceStatusImage, 1, 3);
+        gridPane1.add(informingBoardslabel, 0, 4);
+        gridPane1.add(informingboardslabelImage, 1, 4);
+        gridPane1.setPadding(new Insets(10));
+        gridPane1.setAlignment(Pos.CENTER);
+
+        HBox center = new HBox();
+        center.getChildren().addAll(vBox1, gridPane1);
+        center.setAlignment(Pos.CENTER);
+        center.setStyle("-fx-border-radius: 2; -fx-border-color: darkgray; -fx-border-insets: 10;" +
+                " -fx-pref-height: 450; -fx-pref-width: 920");
+        center.setPadding(new Insets(20));
+        getChildren().add(center);
+
     }
+
 }

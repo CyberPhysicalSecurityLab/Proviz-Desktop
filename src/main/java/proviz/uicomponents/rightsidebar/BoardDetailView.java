@@ -1,80 +1,66 @@
 package proviz.uicomponents.rightsidebar;
 
+import javafx.scene.control.ListView;
+import javafx.scene.layout.VBox;
 import proviz.models.devices.Board;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.ArrayList;
 
 /**
  * Created by Burak on 2/16/17.
  */
-public class BoardDetailView extends JPanel {
 
-    private JLabel makeAndNameLabel;
-    private JLabel totalAvailableTitleLabel;
-    private JLabel analogInputLabel;
-    private JLabel digitalInputLabel;
-    private JLabel i2cInputLabel;
-    private JLabel spiBusLabel;
-    private JLabel serialPortPairsLabel;
-    private JLabel powerSupportTitleLabel;
-    private JLabel powerSupportLabel;
+public class BoardDetailView extends VBox {
 
-    public BoardDetailView()
-    {
-        setLayout(new BoxLayout(this,BoxLayout.Y_AXIS));
+    private SidebarSection details;
+    private ListView detailContent;
 
 
-        setBorder(new EmptyBorder(10,10,0,0));
+    public BoardDetailView(){
 
-
-        makeAndNameLabel = new JLabel("");
-        analogInputLabel = new JLabel("");
-        digitalInputLabel = new JLabel("");
-        totalAvailableTitleLabel = new JLabel("Total Available Pins");
-
-        i2cInputLabel = new JLabel("");
-        spiBusLabel = new JLabel("");
-        serialPortPairsLabel = new JLabel("");
-        powerSupportTitleLabel = new JLabel("");
-
-        powerSupportLabel = new JLabel("");
-
-        add(makeAndNameLabel);
-        add(analogInputLabel);
-        add(digitalInputLabel);
-        add(totalAvailableTitleLabel);
-        add(i2cInputLabel);
-        add(spiBusLabel);
-        add(serialPortPairsLabel);
-        add(powerSupportTitleLabel);
-        add(powerSupportLabel);
-
-
+        initUI();
 
     }
 
 
-    public void changeData(Board board)
-    {
-        makeAndNameLabel.setText(board.getMake() +" "+ board.getName());
-        totalAvailableTitleLabel.setText("Total Available Pins");
+    private void initUI(){
+        details = new SidebarSection();
 
-        analogInputLabel.setText("Analog: "+board.AvailableAnalogPinNumber());
-        digitalInputLabel.setText("Digital: "+ board.AvailableDigitalPinNumber());
-        i2cInputLabel.setText("I2C: "+board.Availablei2cPinNumber());
-        spiBusLabel.setText("SPI: "+board.getSpiBusNumber());
-        serialPortPairsLabel.setText("Serial Port: "+board.getSpiBusNumber());
-        powerSupportTitleLabel.setText("Supported Power Sources");
-        String powerText = "";
+        detailContent = new ListView();
+        detailContent.getItems().addAll(new ArrayList<String>());
+        detailContent.setStyle("-fx-background-color: lightgray");
+        details.setCenter(detailContent);
+
+        this.getChildren().add(details);
+    }
+
+    //add logic to set the content of Detail View
+
+    public void setBoard(Board board){
+        ArrayList<String>  informations = new ArrayList<>();
+        informations.add("Name: "+board.getUserFriendlyName());
+        informations.add("Make: "+board.getMake());
+        informations.add("Model: "+board.getName());
+        informations.add("Available Analog Pin: "+board.AvailableAnalogPinNumber());
+        informations.add("Available Digital Pin: "+board.AvailableDigitalPinNumber());
+        informations.add("Available Serial Pin: "+board.AvailableSerialPinNumber());
+        informations.add("Available SPI: "+board.AvailableSPIPinNumber());
+        informations.add("Available i2c Pin: "+board.Availablei2cPinNumber());
         if(board.isHas3_3v())
-            powerText += "3.3V";
-        if(board.isHas5v())
-            powerText +=",5V";
-        powerSupportLabel.setText(powerText);
+        informations.add("Supported 3.3V PSU: yes");
+        else
+            informations.add("Supported 3.3V PSU: no");
 
-        revalidate();
+        if(board.isHas5v())
+        informations.add("Supported 5V PSU: yes");
+        else
+                informations.add("Supported 5V PSU: no");
+
+        detailContent.getItems().clear();
+        detailContent.getItems().addAll(informations);
     }
 
 

@@ -14,6 +14,15 @@ public class WiFiConnection extends BaseConnection {
 
     private ProjectConstants.DEVICE_TYPE device_type;
     private String deviceId;
+    private String deviceIpAddress;
+
+    public String getDeviceIpAddress() {
+        return deviceIpAddress;
+    }
+
+    public void setDeviceIpAddress(String deviceIpAddress) {
+        this.deviceIpAddress = deviceIpAddress;
+    }
 
     public WiFiConnection(Board candidateBoard)
     {

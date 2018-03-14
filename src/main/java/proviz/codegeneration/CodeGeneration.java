@@ -99,7 +99,8 @@ public class CodeGeneration {
             inputs.put("board",codeGenerationTemplate.getBoard());
             inputs.put("AP_NAME","FIU_WiFi");
             inputs.put("AP_PASS","");
-            inputs.put("SERVER_IP","10.109.149.102");
+            inputs.put("SERVER_IP","10.109.125.253");
+            //todo ipdaress needs to be dynmaically asigned.
             inputs.put("PORT_NUMBER","5867");
             template.process(inputs,stringWriter);
             Template template1 = new Template("tmplt1",new StringReader(returnedVal),configuration);

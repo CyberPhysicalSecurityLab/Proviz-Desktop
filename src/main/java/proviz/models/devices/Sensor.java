@@ -1,5 +1,6 @@
 package proviz.models.devices;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import proviz.models.codegeneration.Code;
 import proviz.ProjectConstants;
 import proviz.models.Bound;
@@ -18,6 +19,7 @@ public class Sensor  {
     private ArrayList<Pin> pins;
     private int baudrate;
     private String description;
+    @JsonIgnore
     private Board parentBoard;
     private String name;
     private String variableTypeName;

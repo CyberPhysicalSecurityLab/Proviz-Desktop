@@ -2,6 +2,7 @@ package proviz.models.devices;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import proviz.ProjectConstants;
 import proviz.codegeneration.CodeGenerationTemplate;
 import proviz.connection.BaseConnection;
@@ -14,14 +15,16 @@ import proviz.models.connection.ReceivedDataModel;
 import proviz.models.connection.ReceivedSensorData;
 import proviz.models.webservice.requests.SensorData;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Date;
 
 /**
  * Created by Burak on 9/30/16.
  */
-@JsonIgnoreProperties({"dataReceiveListener"})
+@JsonIgnoreProperties({"dataReceiveListener","codeGenerationTemplate"})
 public class Board {
     private DataReceiveListener dataReceiveListener;
     private String name;
@@ -49,6 +52,25 @@ public class Board {
     private ArrayList<Pin> SPIBusPins;
     private ArrayList<Sensor> sensors;
     private ProjectConstants.CONNECTION_TYPE connectionType;
+    private boolean isHasAliveConnection;
+    private double x;
+    private double y;
+
+    public double getX() {
+        return x;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
 
     public CodeGenerationTemplate getCodeGenerationTemplate() {
         return codeGenerationTemplate;
@@ -119,6 +141,7 @@ public class Board {
         this.connectionType = board.getConnectionType();
 
 
+
     }
 
     public void subscribe(DataReceiveListener listener)
@@ -135,6 +158,11 @@ public class Board {
 
         for(DataReceiveListener dataReceiveListener: listenerSubscribeList)
         {
+            if(!isHasAliveConnection)
+            {
+                dataReceiveListener.connectionEstablished(this);
+                isHasAliveConnection = true;
+            }
             ReceivedDataModel receivedDataModel  = new ReceivedDataModel();
             ArrayList<ReceivedSensorData> sensorDataArrayList = new ArrayList<>();
             for( SensorData sensorData: incomingDeviceData.getSensors()) {
@@ -201,8 +229,8 @@ public class Board {
         serialPins = initialize(serialStartingPinNumber,serialPortPairs, Pin.PINTYPE.comm);
         I2CPins  = initialize(i2cStartingPinNumber,i2cPinNumber,Pin.PINTYPE.i2c);
         SPIBusPins = initialize(spiBusStartingPinNumber,spiBusNumber, Pin.PINTYPE.spibus);
-        connectionType = ProjectConstants.CONNECTION_TYPE.BLUETOOTH_CLASSIC;
         sensors = new ArrayList<>();
+        isHasAliveConnection = false;
     }
 
     @Override
@@ -537,4 +565,6 @@ for(int i = 0; i<totalPinNumber; i++){
     public void setIncomingDeviceData(IncomingDeviceData incomingDeviceData) {
         this.incomingDeviceData = incomingDeviceData;
     }
+
+
 }

@@ -1,70 +1,149 @@
 package proviz.asci;
 
-import com.intellij.uiDesigner.core.GridLayoutManager;
-
-import javax.swing.*;
-import java.awt.*;
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.Spacer;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import proviz.codegeneration.CodeGenerationTemplate;
 import proviz.models.devices.Pin;
 import proviz.models.devices.Sensor;
-import proviz.PinSelectionRow;
 
 import java.util.ArrayList;
 
 /**
- * Created by Burak on 1/16/17.
+ * Created by Burak on 8/16/17.
  */
-public class PinSelectionForSensorPanel extends JPanel {
+public class PinSelectionForSensorPanel extends BorderPane {
 
-    private JPanel contentPane;
-    private JPanel pinSelectionList;
-    private CodeGenerationTemplate template;
+    private VBox asci;
+    private VBox pinSelectionBox;
+    private Label sensorImageLabel;
+    private CodeGenerationTemplate codeGenerationTemplate;
+    private Sensor candidateSensor;
+    private VBox pinList;
 
-    private JScrollPane pinSelectionScrollView;
-    private JLabel sensorImageLabel;
-    private Sensor selectedSensor;
-
-    public PinSelectionForSensorPanel(CodeGenerationTemplate codeGenerationTemplate)
-    {
-        this.template = codeGenerationTemplate;
+    public PinSelectionForSensorPanel(CodeGenerationTemplate codeGenerationTemplate){
+        this.codeGenerationTemplate = codeGenerationTemplate;
         initUI();
-        add(contentPane);
+    }
+
+
+
+
+    private void initUI(){
+        this.setPrefSize(945, 520);
+
+
+        asci = new VBox();
+        Label label1 = new Label();
+        label1.setGraphic(new ImageView(new Image(getClass().getResourceAsStream("/images/asci.png"))));
+        label1.setPadding(new Insets(10,10,10,10));
+        Label label2 = new Label();
+        label2.setText("Asci");
+        label2.setAlignment(Pos.CENTER);
+        label2.setMaxWidth(Double.MAX_VALUE);
+        label2.setPadding(new Insets(10,10,10,10));
+        asci.getChildren().addAll(label1, label2);
+        asci.setPadding(new Insets(20,10,20,10));
+        asci.setStyle("-fx-border-color: lightgray");
+        asci.setAlignment(Pos.CENTER);
+        asci.setMinHeight(450);
+        VBox v = new VBox();
+        v.setPadding(new Insets(0,10,0,10));
+        v.setAlignment(Pos.CENTER);
+        v.getChildren().add(asci);
+        this.setLeft(v);
+
+        pinSelectionBox = new VBox();
+        Label nextStep = new Label();
+        Label reminder = new Label();
+        nextStep.setText("In order to generate your code, you must now assign your pin.");
+        nextStep.setPadding(new Insets(10, 10, 10, 10));
+        reminder.setText("Remember to complete the required pin assignment");
+        reminder.setPadding(new Insets(10, 10, 10 , 10));
+        VBox top = new VBox();
+        top.setMinHeight(150);
+        top.getChildren().addAll(nextStep, reminder);
+
+        sensorImageLabel = new Label();
+        setSensorImageLabel();
+        sensorImageLabel.setPadding(new Insets(5, 5, 5, 5));
+        sensorImageLabel.setMinHeight(150);
+
+         pinList = new VBox();
+        pinList.setStyle("-fx-border-color: lightgray");
+
+
+
+
+
+
+        HBox bottom = new HBox();
+        bottom.setPrefHeight(150);
+
+        HBox middle = new HBox();
+        middle.getChildren().addAll(sensorImageLabel, pinList);
+        middle.setPrefHeight(150);
+        pinSelectionBox.getChildren().addAll(top, middle, bottom);
+        pinSelectionBox.setStyle("-fx-border-color: lightgray");
+        pinSelectionBox.setPadding(new Insets(20,10,20,0));
+        pinSelectionBox.setMinHeight(450);
+        pinSelectionBox.setAlignment(Pos.CENTER);
+
+        VBox v2 = new VBox();
+        v2.getChildren().addAll(pinSelectionBox);
+        v2.setAlignment(Pos.CENTER);
+        v2.setPadding(new Insets(0, 10, 0, 5));
+
+
+        this.setCenter(v2);
 
     }
+
+    private void addPinRowtoPinList(HBox pinSelectionRow)
+    {
+        pinList.getChildren().add(pinSelectionRow);
+    }
+
+    public void setSensorImageLabel(){
+        sensorImageLabel.setGraphic(new ImageView(
+                new Image(getClass().getResourceAsStream("/sensors/images/Ezsonarsensor.jpg"))));
+
+    }
+
     public void setSelectedSensor(Sensor sensor)
     {
-        GridBagConstraints gridBagConstraints = new GridBagConstraints();
-        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1;
-        gridBagConstraints.gridx = 0;
-        this.selectedSensor = sensor;
+
 
         for (Pin sensorPin : sensor.getPins()) {
             ArrayList<Pin> pinCandidateList = new ArrayList<>();
             ArrayList<Pin> boardPins = null;
             switch (sensorPin.getType()) {
                 case analog: {
-                    boardPins = template.getBoard().getAnalogPins();
+                    boardPins = codeGenerationTemplate.getBoard().getAnalogPins();
                     break;
                 }
                 case comm: {
-                    boardPins = template.getBoard().getSerialPins();
+                    boardPins = codeGenerationTemplate.getBoard().getSerialPins();
                     break;
                 }
                 case digital: {
-                    boardPins = template.getBoard().getDigitalPins();
+                    boardPins = codeGenerationTemplate.getBoard().getDigitalPins();
                     break;
                 }
                 case  i2c:
                 {
-                    boardPins = template.getBoard().getI2CPins();
+                    boardPins = codeGenerationTemplate.getBoard().getI2CPins();
                     break;
                 }
                 case spibus:
                 {
-                    boardPins  = template.getBoard().getSPIBusPins();
+                    boardPins  = codeGenerationTemplate.getBoard().getSPIBusPins();
                     break;
                 }
             }
@@ -75,151 +154,50 @@ public class PinSelectionForSensorPanel extends JPanel {
                     }
                 }
 
-                PinSelectionRow pinSelectionRow = new PinSelectionRow(sensorPin, pinCandidateList);
-                pinSelectionList.add(pinSelectionRow, gridBagConstraints);
+
+                addPinRowtoPinList(preparePinSelectionRow(sensorPin, pinCandidateList));
+
             }
         }
-        pinSelectionScrollView.setViewportView(pinSelectionList);
+
 
     }
-    public void makeChangesOnSelectedSensor()
+
+    private HBox preparePinSelectionRow(Pin sensorPin, ArrayList<Pin> pinCandidateList)
     {
-        for (Component component : pinSelectionList.getComponents()) {
-            PinSelectionRow row = (PinSelectionRow) component;
-            Pin boardPin = row.getSelectedPin();
-            Pin sensorPin = row.getSensorPin();
-            sensorPin.setOrder(boardPin.getOrder());
-            boardPin.setAvailable(false);
-            sensorPin.setAvailable(false);
-            if(sensorPin.getDataDirection() == Pin.DATA_DIRECTION.OUTPUT)
-            boardPin.setDataDirection(Pin.DATA_DIRECTION.INPUT);
-            else if(sensorPin.getDataDirection() == Pin.DATA_DIRECTION.INPUT)
-                boardPin.setDataDirection(Pin.DATA_DIRECTION.OUTPUT);
-            boardPin.setIsrequired(sensorPin.isrequired());
-        }
+        Label pinAssignment = new Label();
+        pinAssignment.setText(sensorPin.getName());
+        pinAssignment.setAlignment(Pos.CENTER);
+        ChoiceBox<String> pinAssignmentChoice = new ChoiceBox<>();
+        for(Pin pin: pinCandidateList)
+        pinAssignmentChoice.getItems().add(pin.toString());
+        HBox borderedChoice1 = new HBox();
+        borderedChoice1.setPrefWidth(400);
+        pinAssignmentChoice.getSelectionModel().selectFirst();
+        borderedChoice1.getChildren().addAll(pinAssignment, pinAssignmentChoice);
+        borderedChoice1.setPadding(new Insets(10,10,10,0));
+        return borderedChoice1;
     }
 
 
-    private void initUI ()
-    {
-        contentPane = new JPanel();
-        contentPane.setLayout(new GridLayoutManager(2, 1, new Insets(10, 10, 10, 10), -1, -1));
-        contentPane.setMinimumSize(new Dimension(872, 591));
-        contentPane.setPreferredSize(new Dimension(872, 591));
-        contentPane.setRequestFocusEnabled(true);
-        contentPane.setVerifyInputWhenFocusTarget(false);
-        final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-        contentPane.add(panel1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final Spacer spacer1 = new Spacer();
-        panel1.add(spacer1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
-        panel1.add(panel2, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        final JPanel panel3 = new JPanel();
-        panel3.setLayout(new GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
-        contentPane.add(panel3, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, true));
-        final JPanel panel4 = new JPanel();
-        panel4.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
-        panel3.add(panel4, new GridConstraints(0, 0, 4, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        panel4.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(-4473925)), null));
-        final JLabel label1 = new JLabel();
-        label1.setIcon(new ImageIcon(getClass().getResource("/images/asci.png")));
-        label1.setText("");
-        panel4.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(188, 340), null, 0, false));
-        final JLabel label2 = new JLabel();
-        label2.setText("Asci");
-        panel4.add(label2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_NORTH, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JPanel panel5 = new JPanel();
-        panel5.setLayout(new GridBagLayout());
-        panel5.setAlignmentX(0.5f);
-        panel3.add(panel5, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, new Dimension(640, 480), new Dimension(640, 480), null, 0, false));
-        panel5.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(-4473925)), null));
-        final JLabel label3 = new JLabel();
-        label3.setText("<html>Now we need to you make pin assignment for code generation process.</html> ");
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.insets = new Insets(0, 10, 0, 0);
-        panel5.add(label3, gbc);
-        final JLabel label4 = new JLabel();
-        label4.setHorizontalAlignment(10);
-        label4.setHorizontalTextPosition(2);
-        label4.setText("Do not forget complete required pin assignment.");
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.2;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 10, 0, 0);
-        panel5.add(label4, gbc);
-        final JPanel panel6 = new JPanel();
-        panel6.setLayout(new GridLayoutManager(1, 2, new Insets(0, 10, 0, 0), -1, -1));
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.5;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel5.add(panel6, gbc);
-        sensorImageLabel = new JLabel();
-        sensorImageLabel.setIcon(new ImageIcon(getClass().getResource("/sensors/images/Ezsonarsensor.jpg")));
-        sensorImageLabel.setText("");
-        panel6.add(sensorImageLabel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        final JPanel panel7 = new JPanel();
-        panel7.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        panel6.add(panel7, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
-        pinSelectionScrollView = new JScrollPane();
-        panel7.add(pinSelectionScrollView, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
-        final JPanel spacer2 = new JPanel();
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.weightx = 1.0;
-        gbc.weighty = 0.5;
-        gbc.fill = GridBagConstraints.VERTICAL;
-        panel5.add(spacer2, gbc);
-        final JPanel spacer3 = new JPanel();
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.weighty = 0.3;
-        gbc.fill = GridBagConstraints.VERTICAL;
-        panel5.add(spacer3, gbc);
-        final JPanel spacer4 = new JPanel();
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.fill = GridBagConstraints.VERTICAL;
-        panel5.add(spacer4, gbc);
-        final JPanel spacer5 = new JPanel();
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.weighty = 0.8;
-        gbc.fill = GridBagConstraints.VERTICAL;
-        panel5.add(spacer5, gbc);
-
-        pinSelectionList = new JPanel();
-        GridBagLayout gridBagLayout = new GridBagLayout();
-        pinSelectionList.setLayout(gridBagLayout);
-
-    }
+//    public void makeChangesOnSelectedSensor()
+//    {
+//        for (Component component : pinSelectionList.getComponents()) {
+//            PinSelectionRow row = (PinSelectionRow) component;
+//            Pin boardPin = row.getSelectedPin();
+//            Pin sensorPin = row.getSensorPin();
+//            sensorPin.setOrder(boardPin.getOrder());
+//            boardPin.setAvailable(false);
+//            sensorPin.setAvailable(false);
+//            if(sensorPin.getDataDirection() == Pin.DATA_DIRECTION.OUTPUT)
+//                boardPin.setDataDirection(Pin.DATA_DIRECTION.INPUT);
+//            else if(sensorPin.getDataDirection() == Pin.DATA_DIRECTION.INPUT)
+//                boardPin.setDataDirection(Pin.DATA_DIRECTION.OUTPUT);
+//            boardPin.setIsrequired(sensorPin.isrequired());
+//        }
+//    }
 
 
-    public JPanel getContentPane() {
-        return contentPane;
-    }
 
-    public void setContentPane(JPanel contentPane) {
-        this.contentPane = contentPane;
-    }
-
-
-    public Sensor getSelectedSensor() {
-        return selectedSensor;
-    }
 }
+

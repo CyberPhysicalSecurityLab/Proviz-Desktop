@@ -251,12 +251,6 @@ public class STK500V2 {
         ArrayList<String> stringArrayList = new ArrayList<>();
         Integer tst = new Integer(-2147483648);
 
-
-
-
-
-
-
         int a1 = wholeData.length/256;
         for(int i=0; i<=a1;i++)
         {
@@ -299,6 +293,7 @@ public class STK500V2 {
                 packet[8] = 0x00;
                 packet[9] = 0x00;
 
+                // AES Encrypted hali buraya gelecek
                 for(int index =0; index <size ;index++)
                 {
                     packet[index+10] = (byte) wholeData[i*256+index];
